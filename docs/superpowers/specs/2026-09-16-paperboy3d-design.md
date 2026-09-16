@@ -1,11 +1,12 @@
-# Paperboy 3D — Design Spec (v1: "One Great Day")
+# PB — Design Spec (v1: "One Great Day")
 
 ## 1. Overview
 
-A browser-based 3D reimagining of the arcade game *Paperboy: The Arcade Game*
-(Data East, 1987). The original is a 2D behind-the-back bicycle ride down a
-suburban street: you throw newspapers at houses on time, dodge cars, and papers
-that land in the yard bounce back and can hit you.
+PB is a browser-based 3D game inspired by the classic arcade paperboy game
+(*Paperboy: The Arcade Game*, Data East, 1987). The original is a 2D
+behind-the-back bicycle ride down a suburban street: you throw newspapers at
+houses on time, dodge cars, and papers that land in the yard bounce back and
+can hit you.
 
 This version keeps the same spirit and core fantasy, modernized:
 
@@ -28,8 +29,8 @@ This version keeps the same spirit and core fantasy, modernized:
 | Language | TypeScript | Type safety across a long-lived project. |
 | Build | Vite | Fast dev, simple static output. |
 | Game loop | Vanilla TS, fixed-timestep simulation | No React in the hot loop; UI is a DOM overlay. |
-| Physics | Hand-rolled (no engine) | Paperboy physics are simple (kinematic bike, parabolic paper projectiles, AABB-ish car collisions) — a full engine is overkill. |
-| Assets (v1) | Free retro pixel-3D pack (Quaternius-style) | Fast to beautiful; a `ModelProvider` abstraction allows swapping to bespoke glTF later without touching game code. |
+| Physics | Hand-rolled (no engine) | PB physics are simple (kinematic bike, parabolic paper projectiles, AABB-ish car collisions) — a full engine is overkill. |
+| Assets (v1) | Programmatic low-poly model library, Quaternius-style pixel-3D palette (no binary assets, git-friendly) | Fully self-contained in git; a `ModelProvider` abstraction allows swapping to a real asset pack or bespoke glTF later without touching game code. |
 | Audio | WebAudio + CC0/generated SFX & chiptune | No licensed audio; layered ambience for immersion. |
 | Testing | Vitest on pure `sim/` modules | Simulation has zero three.js imports, so it is unit-testable and deterministic. |
 
@@ -59,7 +60,7 @@ src/
     economy.ts          # earnings/fines, end-of-day tally (weekly-loop hook)
   render/
     scene.ts, camera.ts, lighting.ts
-    models/modelProvider.ts   # logical entity -> visual; v1: pixel-3D pack, later: glTF
+    models/modelProvider.ts   # logical entity -> visual; v1: programmatic low-poly, later: pack/glTF
   audio/                # WebAudio: layered ambience + SFX + music bed
   input/                # action-based input (steer/throttle/throw); gamepad slots in here
   ui/                   # DOM overlay: HUD, briefing card, tally screen (retro type)
@@ -70,8 +71,8 @@ tests/                  # vitest on sim/ (pure) — trajectories, windows, scori
 ### Key abstractions
 
 - **`ModelProvider`** — maps a logical entity (house, tree, car, bike) to a
-  visual. v1 returns pixel-3D pack assets; later returns bespoke glTF. Game
-  code never references a concrete model.
+  visual. v1 returns programmatic low-poly models; later returns pack/glTF
+  assets. Game code never references a concrete model.
 - **Action-based `input/`** — maps device input to named actions
   (`steer`, `throttle`, `throw`). Gamepad support later maps to the same
   actions without touching simulation.
@@ -116,8 +117,8 @@ the weekly loop will consume.
 ## 5. Immersion
 
 ### Visual
-- Pixel-3D pack assets (Quaternius-style), limited retro palette, chunky
-  proportions, flat + slight vertex-shaded lighting.
+- Programmatic low-poly models in a Quaternius-style pixel-3D palette: limited
+  retro colors, chunky proportions, flat + slight vertex-shaded lighting.
 - Full "morning" light setup: low warm sun, long soft shadows (single
   directional shadow map), sky gradient, distance fog for depth.
 - Weather: rain = particle streaks + wet-ground darkening + fog shift; wind
@@ -194,5 +195,5 @@ Check camera framing, shadow quality, and rain legibility.
 
 - Full weekly economy (rent, bike upgrades, subscription churn).
 - Gamepad input (seam exists, not wired).
-- Bespoke glTF assets (seam exists, v1 uses the pixel-3D pack).
+- Bespoke glTF assets (seam exists, v1 uses the programmatic low-poly library).
 - Multiple days/levels, leaderboards, persistence beyond a single day.
