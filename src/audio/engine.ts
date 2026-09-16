@@ -26,12 +26,14 @@ export class AudioEngine {
   private chainCounter = 0;
   private lastBird = 0;
   private rainMusic = false;
+  ctxStarted = false;
 
   ensure(): void {
     if (this.ctx) return;
     if (typeof window === 'undefined' || !window.AudioContext) return;
     const ctx = new AudioContext();
     this.ctx = ctx;
+    this.ctxStarted = true;
     this.master = ctx.createGain();
     this.master.gain.value = 0.5;
     this.master.connect(ctx.destination);

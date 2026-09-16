@@ -35,6 +35,7 @@ export class KeyboardInput {
     if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
       e.preventDefault();
     }
+    this.consumed.delete(e.code);
     this.keys.add(e.code);
   };
   private onUp = (e: KeyboardEvent): void => {
@@ -48,7 +49,7 @@ export class KeyboardInput {
     return actionsFromKeys(this.keys);
   }
 
-  // was this key held down at least once since attach? (used for Enter transitions)
+  // true exactly once per physical press (a keydown re-arms it); used for Enter transitions
   consumePressed(code: string): boolean {
     if (this.keys.has(code) && !this.consumed.has(code)) {
       this.consumed.add(code);
