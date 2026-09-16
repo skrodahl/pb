@@ -83,6 +83,7 @@ export class WorldScene {
     sc.top = 45;
     sc.bottom = -45;
     sc.far = 150;
+    sc.updateProjectionMatrix();
     this.sun.shadow.bias = -0.0004;
     this.scene.add(this.sun, this.sun.target, new THREE.HemisphereLight(0xbfd9f2, 0x5d944f, 0.5));
 
