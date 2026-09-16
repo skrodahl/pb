@@ -28,7 +28,6 @@ function fixture(houseZ = 18): PaperWorld & { events: SimEvent[]; rider: Rider }
     addEvent: (e) => events.push(e),
     deliver: () => {},
     events,
-    rider: rider,
   };
   return w;
 }

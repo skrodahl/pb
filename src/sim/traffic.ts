@@ -7,9 +7,11 @@ export class Traffic {
   private timer: number;
   private rng: () => number;
   private nextId = 0;
+  private cfg: DayConfig['traffic'];
 
-  constructor(private cfg: DayConfig['traffic']) {
-    this.rng = mulberry32(cfg.seed);
+  constructor(cfg: DayConfig['traffic'], seed?: number) {
+    this.cfg = cfg;
+    this.rng = mulberry32(seed ?? cfg.seed);
     this.timer = cfg.interval;
   }
 
@@ -38,7 +40,7 @@ export class Traffic {
   }
 
   private spawn(rider: Rider): void {
-    const dir: 1 | -1 = -rider.heading;
+    const dir: 1 | -1 = rider.heading === 1 ? -1 : 1;
     this.cars.push({
       id: this.nextId++,
       x: 0,

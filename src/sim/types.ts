@@ -90,7 +90,8 @@ export type SimEvent =
   | { type: 'car_hit' }
   | { type: 'rain_start' }
   | { type: 'delivery'; houseIndex: number; kind: 'clean' | 'late' | 'wrong' }
-  | { type: 'missed'; houseIndex: number };
+  | { type: 'missed'; houseIndex: number }
+  | { type: 'day_end'; tally: Tally };
 
 export interface Tally {
   clean: number;
