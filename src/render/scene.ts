@@ -54,6 +54,7 @@ export class WorldScene {
   groundMat: THREE.MeshStandardMaterial;
   roadMat: THREE.MeshStandardMaterial;
   private time = 0;
+  private sunOff: [number, number, number] = [-45, 30, 20];
 
   constructor(canvas: HTMLCanvasElement, cfg: DayConfig) {
     this.renderer = new THREE.WebGLRenderer({
@@ -68,9 +69,9 @@ export class WorldScene {
     this.renderer.toneMappingExposure = 1.15;
 
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.Fog(0xf0c898, 40, 220);
+    this.scene.fog = new THREE.Fog(0xf0c898, 55, 170);
 
-    this.camera = new THREE.PerspectiveCamera(60, 1, 0.1, 500);
+    this.camera = new THREE.PerspectiveCamera(60, 1, 0.1, 900);
     this.camera.position.set(0, 4.5, -6);
     this.camera.lookAt(0, 1.2, 30);
 
@@ -78,20 +79,21 @@ export class WorldScene {
     this.sun = new THREE.DirectionalLight(0xffe6b0, 1.6);
     this.sun.position.set(-45, 30, 20);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.setScalar(2048);
+    this.sun.shadow.mapSize.setScalar(4096);
     const sc = this.sun.shadow.camera;
-    sc.left = -45;
-    sc.right = 45;
-    sc.top = 45;
-    sc.bottom = -45;
-    sc.far = 150;
+    sc.left = -150;
+    sc.right = 150;
+    sc.top = 150;
+    sc.bottom = -150;
+    sc.near = 1;
+    sc.far = 230;
     sc.updateProjectionMatrix();
     this.sun.shadow.bias = -0.0004;
-    this.scene.add(this.sun, this.sun.target, new THREE.HemisphereLight(0xbfd9f2, 0x5d944f, 0.5));
+    this.scene.add(this.sun, this.sun.target, new THREE.HemisphereLight(0xbfd9f2, 0x5d944f, 0.62));
 
     // ground
     this.groundMat = mat(PALETTE.grass, { roughness: 1 });
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), this.groundMat);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(220, 340), this.groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.position.z = 120;
     ground.receiveShadow = true;
@@ -201,7 +203,9 @@ export class WorldScene {
     this.bike.rotation.y = r.heading === 1 ? 0 : Math.PI;
     const stack = this.bike.userData.stack as THREE.Group;
     stack.children.forEach((p, i) => (p.visible = sim.held > i));
-    // shadow camera follows the rider
+    // shadow light + camera follow the rider (frustum stays centered on view)
+    const [ox, oy, oz] = this.sunOff;
+    this.sun.position.set(r.x + ox, oy, r.z + oz);
     this.sun.target.position.set(0, 0, r.z);
   }
 
@@ -286,7 +290,7 @@ export class WorldScene {
   setSun(clockMin: number, dayLength: number): void {
     const day = Math.max(0, Math.min(1, clockMin / dayLength));
     updateSky(this.skydome, day, this.scene);
-    this.sun.position.set(-45 + 25 * day, 30 + 40 * day, 20);
+    this.sunOff = [-45 + 25 * day, 30 + 40 * day, 20];
     this.sun.intensity = 1.6 + day * 0.5;
   }
 
