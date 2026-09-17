@@ -25,7 +25,7 @@ npx vite preview
 
 | Key | Action |
 | --- | --- |
-| `W` / `S` | pedal / brake |
+| `W` / `S` | pedal faster / ease off — the bike always rolls |
 | `A` / `D` | steer the bike (it yaws and leans into the turn) |
 | `Space` (tap) | sideways throw at the next house on the route |
 | `Enter` | advance screens |
@@ -36,11 +36,13 @@ throw when the house is beside you. The flick eases your speed down
 a touch so the paper isn't left behind. A perfectly parallel throw pays
 base + the full precision bonus; a window missed in z (wind drift or
 late) hits the wall and skids back to the lawn. Paper stacks on the
-curbs restock the rack (a full rack leaves them in place). STOPPED
+curbs restock the rack (a full rack leaves them in place, and the
+stacks come back when you ride the other way). STOPPED
 mailboxes (gray box, red card) are smash targets: a paper through
 their window pays the breakage bonus. Watch the road — crossing cars, skaters and
 RC cars — a crash staggers you and blows papers off the rack. Ride
-too slow and the bees show up. Points only: no money, no fines.
+coast without pedaling long enough and the bees show up. Points only:
+no money, no fines.
 
 ## Debug states
 

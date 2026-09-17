@@ -57,6 +57,7 @@ export class WorldScene {
   chimes: THREE.Group[] = [];
   carMeshes: THREE.Group[] = [];
   carAssign = new Map<number, number>(); // car id -> pool index
+  bundleMeshes: THREE.Group[] = [];
   skaterMeshes: THREE.Group[] = [];
   rcMeshes: THREE.Group[] = [];
   beeMeshes: THREE.Group[] = [];
@@ -209,11 +210,12 @@ export class WorldScene {
       }
     }
 
-    // paper bundles: ride over to restock
+    // paper bundles: ride over to restock (hidden once picked up, back on the return pass)
     for (const [bx, bz] of cfg.bundles) {
       const b = createBundle();
       b.position.set(bx, 0, bz);
       this.scene.add(b);
+      this.bundleMeshes.push(b);
     }
 
     // obstacle pools: skaters, RC cars, bee swarm
@@ -305,6 +307,9 @@ export class WorldScene {
   }
 
   updateObstacles(sim: GameSim): void {
+    this.bundleMeshes.forEach((m, i) => {
+      m.visible = sim.bundleTakes.get(i) !== sim.rider.heading;
+    });
     const active = sim.obstacles.cars.filter((c) => c.active);
     for (const [id, idx] of this.carAssign) {
       if (!active.some((c) => c.id === id)) {

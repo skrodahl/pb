@@ -81,12 +81,21 @@ test('nextTarget: nearest actionable house ahead (subs and stopped), skipping do
 test('riding over a bundle restocks papers (capped) and emits bundle', () => {
   const sim = new GameSim(DAY_1, 7);
   sim.rider.z = 60;
-  sim.rider.x = -5.8; // bundle 0 at (-5.8, 60)
+  sim.rider.x = -3.0; // bundle 0 at (-3.0, 60)
   sim.held = 10;
   sim.step(1 / 60, act());
   expect(sim.held).toBe(15);
-  expect(sim.bundlesTaken.has(0)).toBe(true);
+  expect(sim.bundleTakes.get(0)).toBe(1);
   expect(sim.drainEvents().some((e) => e.type === 'bundle' && e.index === 0)).toBe(true);
+  // the stack is gone for the rest of this pass...
+  sim.step(1 / 60, act());
+  expect(sim.held).toBe(15);
+  // ...and back once you ride the other way
+  sim.rider.heading = -1;
+  sim.held = 10;
+  sim.step(1 / 60, act());
+  expect(sim.held).toBe(15);
+  expect(sim.bundleTakes.get(0)).toBe(-1);
 });
 
 test('stalling lets the bees show up and bump the rider', () => {
@@ -107,7 +116,7 @@ test('a full rack leaves the stack in place', () => {
   sim.held = MAX_HELD;
   sim.step(1 / 60, act());
   expect(sim.held).toBe(MAX_HELD);
-  expect(sim.bundlesTaken.has(0)).toBe(false);
+  expect(sim.bundleTakes.get(0)).toBeUndefined();
   expect(sim.drainEvents().some((e) => e.type === 'bundle')).toBe(false);
 });
 

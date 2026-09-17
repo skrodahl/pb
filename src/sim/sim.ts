@@ -30,7 +30,9 @@ export class GameSim {
   obstacles: ObstacleSim;
   bees: BeeSim = new BeeSim();
   weather: WeatherSim;
-  bundlesTaken = new Set<number>();
+  // bundle index -> the heading it was picked up on; the stack comes back
+  // when you ride the other way
+  bundleTakes = new Map<number, 1 | -1>();
   private events: SimEvent[] = [];
   private prevThrowHeld = false;
   private paperId = 0;
@@ -91,10 +93,10 @@ export class GameSim {
 
   private pickBundles(): void {
     this.config.bundles.forEach((b, i) => {
-      if (this.bundlesTaken.has(i)) return;
       if (this.held >= MAX_HELD) return; // a full rack leaves the stack in place
+      if (this.bundleTakes.get(i) === this.rider.heading) return; // grabbed on this pass
       if (Math.abs(b[0] - this.rider.x) < 1.6 && Math.abs(b[1] - this.rider.z) < 1.6) {
-        this.bundlesTaken.add(i);
+        this.bundleTakes.set(i, this.rider.heading);
         this.held = Math.min(MAX_HELD, this.held + PTS.bundle);
         this.addEvent({ type: 'bundle', index: i });
       }

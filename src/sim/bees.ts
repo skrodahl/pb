@@ -1,8 +1,9 @@
+import { BASE_SPEED } from './types';
 import type { Rider, SimEvent } from './types';
 
-// Ride too slow and a bee swarm shows up ahead to push you on.
-// Stall ~3s under 1.5 m/s => spawn; the swarm bumps you (stagger) if you're
-// still slow, and disperses once you get moving.
+// Cruise without pedaling and a bee swarm shows up ahead to push you on.
+// ~3s at the cruise speed (or slower) => spawn; the swarm bumps you
+// (stagger) if you're still slow, and disperses once you rev up.
 export interface Bee {
   x: number;
   z: number;
@@ -34,14 +35,14 @@ export class BeeSim {
           return;
         }
       }
-      // rider got moving: the swarm loses interest
-      if (rider.speed > 4) {
+      // rider revved up: the swarm loses interest
+      if (rider.speed > BASE_SPEED + 1) {
         this.active = false;
         this.stallT = 0;
       }
       return;
     }
-    if (rider.stagger === 0 && rider.speed < 1.5) {
+    if (rider.stagger === 0 && rider.speed < BASE_SPEED + 1) {
       this.stallT += dt;
       if (this.stallT >= 3) {
         this.active = true;

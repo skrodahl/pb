@@ -24,6 +24,7 @@ export interface Paper {
   bounces: number;
   target: number | null;
   precision: number; // 1 - |dz|/WIN_Z_HALF at throw; drives the clean bonus
+  zDecel: number; // flutter drag on the inherited forward speed (0 for skids)
 }
 
 // Street obstacles: cars cross at intersections (perpendicular to the route);
@@ -133,6 +134,7 @@ export interface Tally {
 }
 
 export const ROUTE_LEN = 240;
+export const BASE_SPEED = 5; // the bike always rolls: W revs up, S eases off
 export const MAX_SPEED = 9;
 export const ACCEL = 8;
 export const BRAKE_DECEL = 16;

@@ -50,6 +50,10 @@ export function launchPaper(
   const z0 = rider.z + rider.heading * 0.6;
   const vx = (fx + side * 0.3 - rider.x) / PAPER_T;
   const vy = (WINDOW_Y_MID - PAPER_Y0 + 0.5 * GRAV * PAPER_T * PAPER_T) / PAPER_T;
+  // the paper inherits the bike's forward speed, and flutter drag kills it
+  // exactly at landing: it hangs ahead mid-flight but lands on the house
+  const vz = rider.speed;
+  const zDecel = (2 * rider.speed) / PAPER_T;
   const dz = Math.abs(z0 - target.spec.pos[1]);
   const precision = Math.max(0, 1 - dz / WIN_Z_HALF);
   return {
@@ -59,11 +63,12 @@ export function launchPaper(
     z: z0,
     vx,
     vy,
-    vz: 0,
+    vz,
     state: 'flying',
     bounces: 0,
     target: targetIdx,
     precision,
+    zDecel,
   };
 }
 
@@ -89,6 +94,7 @@ export function scatterPapers(
       bounces: 1,
       target: null,
       precision: 0,
+      zDecel: 0,
     });
   }
   return out;
@@ -111,6 +117,7 @@ export function stepPapers(w: PaperWorld, papers: Paper[], dt: number): void {
       p.vy -= GRAV * dt;
       p.vx += w.wind[0] * dt;
       p.vz += w.wind[1] * dt;
+      if (p.zDecel > 0) p.vz = Math.max(0, p.vz - p.zDecel * dt); // flutter kills the inherited speed
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.z += p.vz * dt;

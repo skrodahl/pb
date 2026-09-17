@@ -15,11 +15,18 @@ test('throttle accelerates up to max', () => {
   expect(r.speed).toBeCloseTo(9, 1);
 });
 
-test('brake stops faster than drag', () => {
+test('brake eases down to the cruise speed, never below it', () => {
   const r = newRider();
   r.speed = 9;
   for (let i = 0; i < 60; i++) stepRider(r, 1 / 60, act({ brake: true }));
-  expect(r.speed).toBeLessThan(1.5);
+  expect(r.speed).toBeCloseTo(5, 1);
+});
+
+test('coasting relaxes back to the cruise speed; the bike never fully stops', () => {
+  const r = newRider();
+  r.speed = 0;
+  for (let i = 0; i < 180; i++) stepRider(r, 1 / 60, act());
+  expect(r.speed).toBeCloseTo(5, 1);
 });
 
 test('turnaround at both ends', () => {
