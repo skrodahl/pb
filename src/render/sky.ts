@@ -26,11 +26,21 @@ export function makeSkyTexture(t: number): THREE.CanvasTexture {
   return tex;
 }
 
+export const SKY_STEPS = 64;
+let skyTextures: THREE.CanvasTexture[] = [];
+let lastIdx = -1;
+
+function ensureSkyTextures(): void {
+  if (skyTextures.length) return;
+  skyTextures = Array.from({ length: SKY_STEPS + 1 }, (_, i) => makeSkyTexture(i / SKY_STEPS));
+}
+
 export function buildSkydome(scene: THREE.Scene): THREE.Mesh {
+  ensureSkyTextures();
   const dome = new THREE.Mesh(
     new THREE.SphereGeometry(400, 16, 12),
     new THREE.MeshBasicMaterial({
-      map: makeSkyTexture(0),
+      map: skyTextures[0],
       side: THREE.BackSide,
       fog: false,
     }),
@@ -40,10 +50,14 @@ export function buildSkydome(scene: THREE.Scene): THREE.Mesh {
 }
 
 export function updateSky(dome: THREE.Mesh, t: number, scene: THREE.Scene): void {
+  ensureSkyTextures();
   const m = dome.material as THREE.MeshBasicMaterial;
-  m.map?.dispose();
-  m.map = makeSkyTexture(Math.max(0, Math.min(1, t)));
-  m.needsUpdate = true;
+  const idx = Math.round(Math.max(0, Math.min(1, t)) * SKY_STEPS);
+  // swap between prebuilt textures — never dispose while the GL state is live
+  if (idx !== lastIdx) {
+    m.map = skyTextures[idx];
+    lastIdx = idx;
+  }
   if (scene.fog) {
     const fog = scene.fog as THREE.Fog;
     fog.color.setHex(lerpHex(0xf0c898, 0xa8d4f0, t));

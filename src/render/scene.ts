@@ -7,6 +7,8 @@ import {
   mat,
   createHouse,
   createTree,
+  createFence,
+  createBush,
   createMailbox,
   createCar,
   createBikeRider,
@@ -114,15 +116,25 @@ export class WorldScene {
     }
 
     // houses + props
+    const sx = (spec: { pos: [number, number] }) => (spec.pos[0] > 0 ? 1 : -1);
     cfg.houses.forEach((spec, i) => {
       const h = createHouse(spec, i);
       this.houseGroups.push(h);
-      this.winGlows.push(h.userData.winMat as THREE.MeshStandardMaterial);
+      this.winGlows.push(h.userData.winGlowMat as THREE.MeshStandardMaterial);
       this.chimes.push(h.userData.chime);
       this.scene.add(h);
       const box = createMailbox();
       box.position.set(spec.porch.x * 1.15, 0, spec.porch.z - 2.6);
       this.scene.add(box);
+      // yard dressing: fence run along the lot front, bushes between lots
+      const fence = createFence();
+      fence.position.set(sx(spec) * 12.8, 0, spec.porch.z + 15);
+      this.scene.add(fence);
+      for (let b = 0; b < 3; b++) {
+        const bush = createBush(i * 3 + b + (sx(spec) > 0 ? 0 : 5));
+        bush.position.set(sx(spec) * (9.5 + ((i + b) % 3) * 1.6), 0, spec.porch.z + 5 + b * 8);
+        this.scene.add(bush);
+      }
     });
 
     // trees: two rows
