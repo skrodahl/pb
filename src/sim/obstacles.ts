@@ -83,16 +83,17 @@ export class ObstacleSim {
     this.rcTimer -= dt;
     if (this.rcTimer <= 0 && !this.rccars.some((r) => r.active)) {
       this.rcTimer = rand(this.cfg.rcEvery, this.rng);
+      // spawned close, crossing slowly: it is still on the road when you arrive
       this.rccars.push({
         id: this.nextId++,
-        z: rider.z + rider.heading * 25,
+        z: rider.z + rider.heading * 8,
         x: 8,
         active: true,
       });
     }
     for (const r of this.rccars) {
       if (!r.active) continue;
-      r.x -= 7 * dt; // crosses the road, yard to yard
+      r.x -= 3.5 * dt; // crosses the road, yard to yard
       if (r.x < -8) {
         r.active = false;
         continue;

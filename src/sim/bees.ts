@@ -24,7 +24,7 @@ export class BeeSim {
     }
     if (this.active) {
       for (const b of this.bees) {
-        b.z -= rider.heading * 5 * dt;
+        b.z -= rider.heading * 4 * dt;
         b.x = rider.x + Math.sin(b.phase) * 1.2;
         if (Math.abs(b.x - rider.x) < 0.9 && Math.abs(b.z - rider.z) < 1.2 && rider.stagger === 0) {
           rider.stagger = 0.9;
@@ -48,7 +48,7 @@ export class BeeSim {
         this.active = true;
         this.bees = [0, 1, 2, 3].map((i) => ({
           x: rider.x,
-          z: rider.z + rider.heading * (12 + i * 1.5),
+          z: rider.z + rider.heading * (15 + i * 1.5),
           phase: i * 1.7,
         }));
       }

@@ -139,6 +139,7 @@ export const MAX_SPEED = 9;
 export const ACCEL = 8;
 export const BRAKE_DECEL = 16;
 export const DRAG = 2;
+export const RECOVER_ACCEL = 4; // back up to cruise speed after a stop
 export const MIN_PER_SEC = 1; // 1 real second = 1 game minute
 export const GRAV = 9.8;
 export const YARD_IN = 4.6; // curb line (|x|)
@@ -153,7 +154,7 @@ export const PAPER_Y0 = 2.5; // release height
 export const WINDOW_Y_MID = 1.45; // delivered paper settles here, inside the glass
 export const MAX_HELD = 16;
 export const START_HELD = 10; // rack load at the start of the day
-export const THROW_SPEED = 5; // a throw clamps speed down (the paper keeps up)
+export const THROW_SPEED = 2; // a throw flattens you out (the paper stays with the bike)
 
 // arcade scoring (points only)
 export const PTS = {

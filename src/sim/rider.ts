@@ -1,5 +1,5 @@
 import type { InputActions, Rider } from './types';
-import { ROUTE_LEN, MAX_SPEED, BASE_SPEED, ACCEL, BRAKE_DECEL, DRAG } from './types';
+import { ROUTE_LEN, MAX_SPEED, BASE_SPEED, ACCEL, BRAKE_DECEL, DRAG, RECOVER_ACCEL } from './types';
 
 export function newRider(): Rider {
   return {
@@ -29,7 +29,7 @@ export function stepRider(r: Rider, dt: number, input: InputActions): void {
   } else if (r.speed > BASE_SPEED) {
     r.speed = Math.max(BASE_SPEED, r.speed - DRAG * dt);
   } else {
-    r.speed = Math.min(BASE_SPEED, r.speed + DRAG * dt);
+    r.speed = Math.min(BASE_SPEED, r.speed + RECOVER_ACCEL * dt);
   }
 
   const s = -input.steer * r.heading; // screen-relative (chase cam mirrors x on return leg)

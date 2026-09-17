@@ -32,8 +32,8 @@ npx vite preview
 
 The throw is a fixed-force sideways flick: the paper flies laterally
 from where you are, so **lining up with the house is the aim** —
-throw when the house is beside you. The flick eases your speed down
-a touch so the paper isn't left behind. A perfectly parallel throw pays
+throw when the house is beside you. The flick flattens you out to a crawl so the paper stays with the
+bike and lands in the window right beside you. A perfectly parallel throw pays
 base + the full precision bonus; a window missed in z (wind drift or
 late) hits the wall and skids back to the lawn. Paper stacks on the
 curbs restock the rack (a full rack leaves them in place, and the
