@@ -61,6 +61,8 @@ export function showBriefing(root: HTMLElement, cfg: DayConfig): void {
      throw, the paper flies sideways. Throwing early (perfectly parallel) pays more.
      Smashing a <span class="nsub">STOPPED</span> mailbox's window pays 200. Watch the road:
      crossing cars, skaters, RC cars — and don't stop pedaling.
+     Paper stacks on the curbs restock your rack — a full rack leaves them in place,
+     so grab them once you've thrown a few.
      <div class="route-strip">${strip}</div>
      <table class="sched">${rows}</table>`,
     'PRESS ENTER TO RIDE',

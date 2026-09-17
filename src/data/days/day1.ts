@@ -27,7 +27,7 @@ export const DAY_1: DayConfig = {
   time: { start: 420, length: 480 },
   houses: [...L, ...R],
   obstacles: {
-    crossZ: [105, 195],
+    crossZ: [105, 165],
     crossEvery: [7, 5],
     skaterEvery: [25, 40],
     rcEvery: [35, 55],

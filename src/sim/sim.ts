@@ -14,7 +14,7 @@ import type {
   SimEvent,
   Tally,
 } from './types';
-import { MIN_PER_SEC, MAX_HELD, PTS } from './types';
+import { MIN_PER_SEC, MAX_HELD, PTS, START_HELD, THROW_SPEED } from './types';
 import { mulberry32 } from '../core/rng';
 
 const PAPER_CAP = 80;
@@ -24,7 +24,7 @@ export class GameSim {
   done = false;
   rider: Rider = newRider();
   papers: Paper[] = [];
-  held = MAX_HELD;
+  held = START_HELD;
   houses: HouseSim[];
   lost = 0;
   obstacles: ObstacleSim;
@@ -66,6 +66,8 @@ export class GameSim {
         const p = launchPaper(this, this.rider, this.paperId++, t, this.houses[t]);
         this.papers.push(p);
         this.held--;
+        // a flick slows the rider down a touch so the paper isn't left behind
+        this.rider.speed = Math.min(this.rider.speed, THROW_SPEED);
         this.addEvent({ type: 'paper_thrown', paperId: p.id });
       }
     }
@@ -90,6 +92,7 @@ export class GameSim {
   private pickBundles(): void {
     this.config.bundles.forEach((b, i) => {
       if (this.bundlesTaken.has(i)) return;
+      if (this.held >= MAX_HELD) return; // a full rack leaves the stack in place
       if (Math.abs(b[0] - this.rider.x) < 1.6 && Math.abs(b[1] - this.rider.z) < 1.6) {
         this.bundlesTaken.add(i);
         this.held = Math.min(MAX_HELD, this.held + PTS.bundle);

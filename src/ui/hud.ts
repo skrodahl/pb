@@ -20,7 +20,7 @@ export function createHud(root: HTMLElement): Hud {
     <div class="hud-tl">
       <div class="hud-line"><span class="hud-label">TIME</span> <span data-k="clock">07:00</span></div>
       <div class="hud-line"><span class="hud-label">SCORE</span> <span data-k="score">0</span></div>
-      <div class="hud-line"><span class="hud-label">PAPERS</span> <span data-k="papers">16</span></div>
+      <div class="hud-line"><span class="hud-label">PAPERS</span> <span data-k="papers">10</span></div>
     </div>
     <div class="hud-tr" data-k="next"></div>
   `;

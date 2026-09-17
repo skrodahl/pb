@@ -23,5 +23,5 @@ test('day1 bundles and intersections are in route', () => {
     expect(z).toBeGreaterThanOrEqual(0);
     expect(z).toBeLessThanOrEqual(240);
   }
-  expect(DAY_1.obstacles.crossZ).toEqual([105, 195]);
+  expect(DAY_1.obstacles.crossZ).toEqual([105, 165]);
 });

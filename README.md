@@ -32,11 +32,13 @@ npx vite preview
 
 The throw is a fixed-force sideways flick: the paper flies laterally
 from where you are, so **lining up with the house is the aim** —
-throw when the house is beside you. A perfectly parallel throw pays
+throw when the house is beside you. The flick eases your speed down
+a touch so the paper isn't left behind. A perfectly parallel throw pays
 base + the full precision bonus; a window missed in z (wind drift or
-late) hits the wall and skids back to the lawn. STOPPED mailboxes
-(gray box, red card) are smash targets: a paper through their window
-pays the breakage bonus. Watch the road — crossing cars, skaters and
+late) hits the wall and skids back to the lawn. Paper stacks on the
+curbs restock the rack (a full rack leaves them in place). STOPPED
+mailboxes (gray box, red card) are smash targets: a paper through
+their window pays the breakage bonus. Watch the road — crossing cars, skaters and
 RC cars — a crash staggers you and blows papers off the rack. Ride
 too slow and the bees show up. Points only: no money, no fines.
 

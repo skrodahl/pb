@@ -1,5 +1,6 @@
 import { GameSim } from '../src/sim/sim';
 import { DAY_1 } from '../src/data/days/day1';
+import { MAX_HELD } from '../src/sim/types';
 import type { InputActions, SimEvent } from '../src/sim/types';
 
 const act = (o: Partial<InputActions> = {}): InputActions => ({
@@ -97,6 +98,17 @@ test('stalling lets the bees show up and bump the rider', () => {
     for (const e of sim.drainEvents()) evs.push(e);
   }
   expect(evs.some((e) => e.type === 'bee_hit')).toBe(true);
+});
+
+test('a full rack leaves the stack in place', () => {
+  const sim = new GameSim(DAY_1, 7);
+  sim.rider.z = 60;
+  sim.rider.x = -3.0;
+  sim.held = MAX_HELD;
+  sim.step(1 / 60, act());
+  expect(sim.held).toBe(MAX_HELD);
+  expect(sim.bundlesTaken.has(0)).toBe(false);
+  expect(sim.drainEvents().some((e) => e.type === 'bundle')).toBe(false);
 });
 
 test('a crash scatters papers off the rack', () => {
