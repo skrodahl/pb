@@ -734,10 +734,10 @@ git push
 **Files:**
 - Modify: whatever the play-test reveals (expect: `AIM_REACH`, `ASSIST_X`, `WIN_*` constants in `types.ts`; `CHARGE_TIME`; marker lerp constants)
 
-- [ ] **Step 1: Auto-run sanity (Browserless)** — load `?debug=ride`, eval `window.__pb.autoRide = ...` (add a `?debug=ride+throw` auto-input: throttle always + `throwHeld = t % 3 < 1.2`, reuse `debug.ts autoInput` with the charge state's formula), let it run to day_end, eval the tally: expect `clean + late ≥ 6` of 13 subscribers, `wrong === 0` (auto-aim never targets NO-SUB houses because `nextTarget` skips them and the assist pulls toward subscribers only), no exceptions (`window.__errcount === 0`).
-- [ ] **Step 2: Manual-feel tuning targets** (screenshot + eval checks, not eyeball-only): from a clean start, with `toCharge()`-style forced state, confirm: (a) half-charge throw lands ~9 m out; (b) full lean (1 s of A) reaches face + 1 m; (c) in `?debug=rain` the wind-corrected marker visibly lags the naive landing and the throw still lands clean with the assist; (d) wall-skid bounce returns a paper toward the road and can hit the rider (reproduce the papers.test 'bounced paper can hit the rider' geometry live once).
-- [ ] **Step 3: Performance spot-check** — `?debug=ride`, rAF-count over 1 s in the Browserless eval (expect ≥ 45 fps on swiftshader; real check is the user's GPU). No new heavy materials (all `MeshStandardMaterial` flatShaded; one 2048 shadow map unchanged).
-- [ ] **Step 4: Full test + build green, commit any tuning constants**
+- [x] **Step 1: Auto-run sanity (Browserless)** — load `?debug=ride`, eval `window.__pb.autoRide = ...` (add a `?debug=ride+throw` auto-input: throttle always + `throwHeld = t % 3 < 1.2`, reuse `debug.ts autoInput` with the charge state's formula), let it run to day_end, eval the tally: expect `clean + late ≥ 6` of 13 subscribers, `wrong === 0` (auto-aim never targets NO-SUB houses because `nextTarget` skips them and the assist pulls toward subscribers only), no exceptions (`window.__errcount === 0`).
+- [x] **Step 2: Manual-feel tuning targets** (screenshot + eval checks, not eyeball-only): from a clean start, with `toCharge()`-style forced state, confirm: (a) half-charge throw lands ~9 m out; (b) full lean (1 s of A) reaches face + 1 m; (c) in `?debug=rain` the wind-corrected marker visibly lags the naive landing and the throw still lands clean with the assist; (d) wall-skid bounce returns a paper toward the road and can hit the rider (reproduce the papers.test 'bounced paper can hit the rider' geometry live once).
+- [x] **Step 3: Performance spot-check** — `?debug=ride`, rAF-count over 1 s in the Browserless eval (expect ≥ 45 fps on swiftshader; real check is the user's GPU). No new heavy materials (all `MeshStandardMaterial` flatShaded; one 2048 shadow map unchanged).
+- [x] **Step 4: Full test + build green, commit any tuning constants**
 
 ```bash
 npx vitest run && npx tsc --noEmit && npm run build
@@ -752,8 +752,8 @@ git push
 **Files:**
 - Modify: `README.md` (controls: "Space hold = aim+charge, release = throw; A/D steer (hold lane while aiming)"; target: "through the window"; `?debug=` table unchanged; architecture note: window-delivery model + 3/4 cam + voxel pass)
 
-- [ ] **Step 1: Update README** as above.
-- [ ] **Step 2: Full acceptance** (record output):
+- [x] **Step 1: Update README** as above.
+- [x] **Step 2: Full acceptance** (record output):
 
 ```bash
 npx vitest run        # entire suite green
@@ -763,7 +763,7 @@ git log --oneline     # v2 story: window model -> throw feel -> marker -> camera
 ```
 
 Acceptance vs v1 spec §8 still holds: one day playable start→tally (flow unchanged), penalties all present (papers/sim tests), rain+wind affect throws (wind test + `?debug=rain`), seams isolated (`economy.ts`, `input.ts`, model builders).
-- [ ] **Step 3: Commit + push**
+- [x] **Step 3: Commit + push**
 
 ```bash
 git add -A && git commit -m "docs: README v2 + acceptance"
