@@ -108,7 +108,7 @@ function frame() {
           audio.sfx('whoosh');
           break;
         case 'paper_landed':
-          audio.sfx(e.kind === 'porch' ? 'thump' : 'bounce');
+          audio.sfx(e.kind === 'window' ? 'thump' : 'bounce');
           break;
         case 'paper_hit_rider':
           audio.sfx('scatter');

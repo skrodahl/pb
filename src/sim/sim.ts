@@ -13,7 +13,7 @@ import type {
   SimEvent,
   Tally,
 } from './types';
-import { MIN_PER_SEC } from './types';
+import { MIN_PER_SEC, ASSIST_X } from './types';
 
 const PAPER_CAP = 80;
 
@@ -56,7 +56,9 @@ export class GameSim {
     const savedCharge = this.rider.charge;
     const savedAim = this.rider.aim;
 
-    stepRider(this.rider, dt, input);
+    const nt = this.nextTarget();
+    const assistX = nt !== null ? Math.sign(this.houses[nt].spec.pos[0]) * ASSIST_X : 0;
+    stepRider(this.rider, dt, input, assistX);
 
     if (release && this.held > 0) {
       this.rider.charge = savedCharge;

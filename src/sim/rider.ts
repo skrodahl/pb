@@ -24,7 +24,7 @@ export function newRider(): Rider {
   };
 }
 
-export function stepRider(r: Rider, dt: number, input: InputActions): void {
+export function stepRider(r: Rider, dt: number, input: InputActions, assistX = 0): void {
   if (r.stagger > 0) {
     r.stagger = Math.max(0, r.stagger - dt);
     r.speed = 0;

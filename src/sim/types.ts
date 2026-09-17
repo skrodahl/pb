@@ -80,11 +80,11 @@ export interface Weather {
 
 export type SimEvent =
   | { type: 'paper_thrown'; paperId: number }
-  | {
+    | {
       type: 'paper_landed';
       paperId: number;
       houseIndex: number | null;
-      kind: 'porch' | 'yard' | 'road';
+      kind: 'window' | 'yard' | 'road';
     }
   | { type: 'paper_hit_rider'; paperId: number }
   | { type: 'car_hit' }
@@ -116,6 +116,18 @@ export const THROW_MAX = 18;
 export const CHARGE_TIME = 1.0;
 export const AIM_RATE = 6;
 export const GRAV = 9.8;
-export const PAPER_Y_LAND = 0.5; // porch lip height
 export const YARD_IN = 4.6; // curb line (|x|)
 export const YARD_OUT = 9; // yard outer edge (|x|)
+
+// v2 window-delivery model (catch-column: the window catches the paper by x/z)
+export const AIM_REACH = 9.5; // rider.aim max (lean); reaches face 8.5 + 1 m into the wall
+export const ASSIST_X = 9.0; // gentle-assist target magnitude (face + 0.5)
+export const WIN_Z_HALF = 1.2; // window z half-width
+export const GROUND_Y = 0.1; // lost-paper settle height (lawn/road)
+export const PAPER_Y0 = 2.5; // release height (flat high toss, descends by gravity)
+export const WINDOW_Y_MID = 1.45; // delivered paper settles here, inside the glass
+
+// street face of a house: body is 5 wide centered on pos[0] (±11)
+export function faceX(pos: [number, number]): number {
+  return pos[0] - Math.sign(pos[0]) * 2.5;
+}

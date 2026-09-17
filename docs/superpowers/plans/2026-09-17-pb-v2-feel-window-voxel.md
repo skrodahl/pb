@@ -32,33 +32,39 @@
 
 ## v2 Geometry (the numbers every task uses)
 
+> **Execution note (T1):** the original "crossing height must be inside the window
+> band" condition is physically impossible — with a fixed T=0.7 s flight the paper
+> reaches the face in the last ~15% of flight, always at ground level. The delivery
+> model is instead a **vertical catch column**: the window catches the paper by
+> (x,z) proximity; the paper then settles inside the window (snap, like the arcade
+> original). No height condition in the resolution. Constants: `PAPER_Y0 = 2.5`
+> (flat high toss, descends by gravity), settle y = `WINDOW_Y_MID = 1.45`.
+> `WIN_Y_LO/HI` were dropped; the window visual (T5) is drawn 0.6–2.2 m.
+
 ```
 types.ts additions:
   AIM_REACH = 9.5        // rider.aim max (lean); reaches face 8.5 + 1 m into the wall
   ASSIST_X  = 9.0        // assist pull target magnitude (face + 0.5)
-  WIN_Y_LO  = 0.5        // window band bottom (paper height at crossing)
-  WIN_Y_HI  = 2.4        // window band top
   WIN_Z_HALF= 1.2        // window z half-width (throw must cross within ±1.2 of house z)
   GROUND_Y  = 0.1        // lost-paper settle height (lawn/road)
-  PAPER_Y0  = 1.5        // release height (raised so the arc apexes ~1.9 m)
+  PAPER_Y0  = 2.5        // release height (flat ~2.5 m toss, descends by gravity)
+  WINDOW_Y_MID = 1.45    // delivered paper settles here, inside the glass
   PAPER_FLIGHT_T = 0.7   // (moved out of papers.ts, exported)
   faceX(h)  = h.spec.pos[0] - Math.sign(h.spec.pos[0]) * 2.5   // ±8.5
 
-Paper flight (papers.ts):
-  vx = (r.aim - r.x)/T, vz = (lp.z - z0)/T,
-  vy = (GROUND_Y - PAPER_Y0 + 0.5*GRAV*T*T)/T   // = 1.9 m/s with the constants above
-  apex ≈ PAPER_Y0 + vy²/(2*GRAV) ≈ 1.9 m — inside the window band [0.5, 2.4]
+Window column (catch):  |x| in [faceX-0.3, faceX+1.5]  AND  |z - house.z| <= WIN_Z_HALF
+Wall (bounce):          |x| >= faceX-0.3  AND  |z - house.z| <= 3.0 (house depth), z-band miss
+Ground (lost):          y <= GROUND_Y && vy < 0  ->  kind by |x| < YARD_IN
 
-Crossing math (marker prediction, per-frame):
-  t_f = T * (|faceX| - |r.x|) / (|aim| - |r.x|)      // time to reach the face
-  x_c = r.x + vx*t_f + 0.5*wind[0]*t_f*t_f
-  z_c = z0 + vz*t_f + 0.5*wind[1]*t_f*t_f
-  y_c = PAPER_Y0 + vy*t_f - 0.5*GRAV*t_f*t_f
-  predicted CLEAN ⇔ |z_c - h.z| ≤ WIN_Z_HALF && WIN_Y_LO ≤ y_c ≤ WIN_Y_HI
-                    (aim must also point at the target house's side)
+Marker prediction (per-frame, catch-column model):
+  naive landing: lp = landingPoint(r)  (x = r.aim, z = r.z + heading*d)
+  wind drift over the flight: dx = 0.5*wind[0]*T*T, dz = 0.5*wind[1]*T*T
+  predicted point: (lp.x + dx, lp.z + dz)
+  predicted CLEAN ⇔ |z_pred - h.z| ≤ WIN_Z_HALF && |x_pred| in [faceX-0.3, faceX+1.5]
+                    && aim's side matches the target house's side
 ```
 
-Sanity check (outbound, no wind, rider x=0, aim 9.375, T=0.7): t_f ≈ 0.64 s, y_c ≈ 1.4 m, z lands where aimed within ~6% short of the target — the marker shows the true crossing so the player leads slightly.
+Sanity check (outbound, no wind, rider x=0, charge 0.95, aim 9.0, T=0.7): paper enters the column at z ≈ 18.8 for a house at z=18 — inside the ±1.2 band; the marker shows the wind-corrected landing so the player leads into rain.
 
 ---
 
