@@ -61,6 +61,22 @@ test('day ends with day_end + tally, exactly once', () => {
   expect(dayEnds[0].tally.net).toBeDefined();
 });
 
+test('nextTarget: nearest pending subscriber ahead in travel direction, skipping NO-SUB', () => {
+  const sim = new GameSim(DAY_1, 7);
+  // outbound, at the start: first subscriber house ahead (z=30)
+  sim.rider.z = 3;
+  sim.rider.heading = 1;
+  expect(sim.nextTarget()).toBe(0);
+  // Okafor (idx 2, z=90) is NO-SUB: rider just past it must skip to Delgado (idx 3, z=120)
+  sim.rider.z = 95;
+  sim.rider.heading = 1;
+  expect(sim.nextTarget()).toBe(3);
+  // return leg: nearest pending subscriber BEHIND (z < rider.z)
+  sim.rider.z = 200;
+  sim.rider.heading = -1;
+  expect(sim.nextTarget()).toBe(13); // Lindqvist, z=180
+});
+
 test('throwing a paper at a porch in window pays clean', () => {
   const sim = new GameSim(DAY_1, 7);
   // controlled setup: rider 15 m short of the left house-0 porch (z=30), inside its window
@@ -68,11 +84,11 @@ test('throwing a paper at a porch in window pays clean', () => {
   sim.rider.x = 0;
   sim.rider.heading = 1;
   sim.clockMin = 25; // house 0 window [20,40]
-  // hold throw + steer left ~0.79 s (full-ish charge, aim slides to the left porch), then release
+  // hold throw + steer screen-right ~0.79 s (outbound: screen-right = left porch), then release
   for (let i = 0; i < 47; i++) {
-    sim.step(1 / 60, act({ steer: -1, throwHeld: true }));
+    sim.step(1 / 60, act({ steer: 1, throwHeld: true }));
   }
-  sim.step(1 / 60, act({ steer: -1, throwHeld: false })); // release frame
+  sim.step(1 / 60, act({ steer: 1, throwHeld: false })); // release frame
   for (let i = 0; i < 50; i++) sim.step(1 / 60, act()); // let the flight finish
   const evs = sim.drainEvents();
   const delivery = evs.find((e) => e.type === 'delivery');

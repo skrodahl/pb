@@ -38,13 +38,15 @@ export function stepRider(r: Rider, dt: number, input: InputActions): void {
   else if (input.brake) r.speed = Math.max(0, r.speed - BRAKE_DECEL * dt);
   else r.speed = Math.max(0, r.speed - DRAG * dt);
 
-  r.x += input.steer * 4.5 * dt;
+  // steer is screen-relative (chase cam mirrors world x on the return leg)
+  const s = -input.steer * r.heading;
+  r.x += s * 4.5 * dt;
   r.x = Math.max(-3.2, Math.min(3.2, r.x));
 
   if (input.throwHeld) {
     r.charging = true;
     r.charge = Math.min(1, r.charge + dt / CHARGE_TIME);
-    r.aim += (input.steer * 6 - r.aim) * Math.min(1, dt * AIM_RATE);
+    r.aim += (s * 6 - r.aim) * Math.min(1, dt * AIM_RATE);
   } else {
     r.charging = false;
     r.charge = 0;

@@ -96,19 +96,18 @@ export class GameSim {
     return tallyFrom(this.houses, this.lost, this.hits);
   }
 
+  // next stop on the route: nearest pending SUBSCRIBER house in the
+  // direction of travel (behind houses wait for the return leg).
   nextTarget(): number | null {
     const r = this.rider;
     let best = -1;
-    let bestScore = Infinity;
+    let bestDist = Infinity;
     this.houses.forEach((h, i) => {
-      if (h.state !== 'pending') return;
-      const [t0, t1] = h.spec.window;
-      const open = this.clockMin >= t0 && this.clockMin <= t1;
-      const score = (open ? 0 : 1000) + Math.abs(h.spec.pos[1] - r.z);
-      if (score < bestScore) {
-        bestScore = score;
-        best = i;
-      }
+      if (h.state !== 'pending' || !h.spec.subscribes) return;
+      const ahead = r.heading === 1 ? h.spec.pos[1] - r.z : r.z - h.spec.pos[1];
+      if (ahead < 0 || ahead >= bestDist) return;
+      bestDist = ahead;
+      best = i;
     });
     return best === -1 ? null : best;
   }

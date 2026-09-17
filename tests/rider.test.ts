@@ -35,20 +35,30 @@ test('turnaround at both ends', () => {
   expect(r.heading).toBe(1);
 });
 
-test('steering clamps to road', () => {
+test('steering is screen-relative: D moves toward -x on the outbound leg', () => {
   const r = newRider();
   r.speed = 5;
   for (let i = 0; i < 180; i++) stepRider(r, 1 / 60, act({ steer: 1 }));
-  expect(r.x).toBeLessThanOrEqual(3.2);
-  expect(r.x).toBeGreaterThanOrEqual(3.1);
+  expect(r.x).toBeLessThanOrEqual(-3.1);
+  expect(r.x).toBeGreaterThanOrEqual(-3.2);
 });
 
-test('charge ramps 0..1 and aim slides', () => {
+test('steering flips with heading on the return leg', () => {
+  const r = newRider();
+  r.heading = -1;
+  r.z = 100;
+  r.speed = 5;
+  for (let i = 0; i < 180; i++) stepRider(r, 1 / 60, act({ steer: 1 }));
+  expect(r.x).toBeGreaterThanOrEqual(3.1);
+  expect(r.x).toBeLessThanOrEqual(3.2);
+});
+
+test('charge ramps 0..1 and aim slides toward screen-right', () => {
   const r = newRider();
   for (let i = 0; i < 60; i++) stepRider(r, 1 / 60, act({ throwHeld: true, steer: 1 }));
   expect(r.charging).toBe(true);
   expect(r.charge).toBeCloseTo(1, 1);
-  expect(r.aim).toBeGreaterThan(3);
+  expect(r.aim).toBeLessThan(-3); // screen-right on outbound = world -x
   const lp = landingPoint(r);
   expect(lp.z).toBeGreaterThan(r.z + 17); // full power => ~18 m out
   expect(lp.x).toBeCloseTo(r.aim);

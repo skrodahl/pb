@@ -240,11 +240,12 @@ export class WorldScene {
 
   updatePorchMarks(sim: GameSim): void {
     const target = sim.nextTarget();
+    const pulse = 0.65 + 0.35 * Math.sin(this.time * 4);
     this.porchPads.forEach((pad, i) => {
       const m = pad.material as THREE.MeshStandardMaterial;
       if (i === target) {
-        m.emissive.setHex(0x2f6);
-        m.emissiveIntensity = 0.55;
+        m.emissive.setHex(0xff9020);
+        m.emissiveIntensity = pulse;
       } else {
         m.emissive.setHex(0x000000);
       }
