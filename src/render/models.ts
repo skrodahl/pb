@@ -16,6 +16,12 @@ export const PALETTE = {
   chimney: 0x9a6a55,
   shutter: 0xd8d4c4,
   cars: [0xc0392b, 0x2980b9, 0xf1c40f, 0x7f8c8d, 0x27ae60, 0x8e44ad],
+  apartment: 0x8f9aa8,
+  litWindow: 0xffd98a,
+  field: 0x9aa83f,
+  soil: 0x6a4a34,
+  sheep: 0xe8e4da,
+  windmill: 0x8a6f5a,
   trunk: 0x5a4632,
   leaves: [0x3f7a3f, 0x4a8f3f, 0x5f9e4a],
   paper: 0xf5f0e6,
@@ -193,15 +199,260 @@ export function createBush(seed: number): THREE.Group {
   return g;
 }
 
-export function createMailbox(): THREE.Group {
+// Mailbox = deliver; gray box + red card = STOPPED (smash target). No box = no business.
+export function createMailbox(stopped = false): THREE.Group {
   const g = new THREE.Group();
   const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.8, 0.12), mat(PALETTE.trunk));
   post.position.y = 0.4;
   g.add(post);
-  const box = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.3), mat(PALETTE.mailbox));
+  const box = new THREE.Mesh(
+    new THREE.BoxGeometry(0.5, 0.3, 0.3),
+    mat(stopped ? 0x7a7a72 : PALETTE.mailbox),
+  );
   box.position.y = 0.9;
   box.castShadow = true;
   g.add(box);
+  if (stopped) {
+    const card = new THREE.Mesh(
+      new THREE.BoxGeometry(0.34, 0.24, 0.02),
+      mat(0xc0392b, { emissive: 0x300a05, emissiveIntensity: 0.6 }),
+    );
+    card.position.set(0, 0.9, 0.16);
+    g.add(card);
+  }
+  return g;
+}
+
+export function createApartment(spec: HouseSpec, i: number): THREE.Group {
+  const g = new THREE.Group();
+  const wallMat = mat(PALETTE.apartment);
+  const floors = [
+    { w: 5, h: 3, y: 1.5 },
+    { w: 4.4, h: 3, y: 4.5 },
+    { w: 3.8, h: 2.6, y: 7.3 },
+  ];
+  for (const f of floors) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(f.w, f.h, 6), wallMat);
+    m.position.set(spec.pos[0], f.y, spec.pos[1]);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    g.add(m);
+  }
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(4, 0.4, 6.4), mat(0x5a6474));
+  roof.position.set(spec.pos[0], 8.8, spec.pos[1]);
+  roof.castShadow = true;
+  g.add(roof);
+
+  const streetSide = Math.sign(spec.porch.x) || 1;
+  const px = spec.pos[0];
+  const pz = spec.pos[1];
+  const faceX = px - streetSide * 2.5;
+
+  // ground-floor delivery window: same catch column as cottages
+  const winGlowMat = mat(0xf0e2c8, { emissive: 0x000000 });
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.4, 2.6), winGlowMat);
+  frame.position.set(faceX, 1.45, pz);
+  const glass = new THREE.Mesh(
+    new THREE.BoxGeometry(0.1, 1.1, 2.3),
+    mat(0x9fc8d8, { roughness: 0.35 }),
+  );
+  glass.position.set(faceX + streetSide * 0.04, 1.45, pz);
+  g.add(frame, glass);
+  g.userData.winGlowMat = winGlowMat;
+
+  // upper-floor windows: warm and lit
+  const lit = i % 2 === 0;
+  const winMat = mat(lit ? 0x6a7484 : PALETTE.litWindow, {
+    emissive: lit ? 0x000000 : PALETTE.litWindow,
+    emissiveIntensity: lit ? 0 : 0.55,
+  });
+  for (const fy of [4.5, 7.3]) {
+    for (const sz of [-1, 1]) {
+      const w = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.0, 1.0), winMat);
+      w.position.set(faceX + streetSide * 0.02, fy, pz + sz * 1.4);
+      g.add(w);
+    }
+  }
+
+  // laundry line on one of the two
+  if (i % 2 === 1) {
+    const poleMat = mat(PALETTE.post);
+    for (const sz of [-1.8, 1.8]) {
+      const pole = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.6, 0.06), poleMat);
+      pole.position.set(faceX + streetSide * 0.5, 4.5, pz + sz);
+      g.add(pole);
+    }
+    const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.45, 0.05), mat(PALETTE.cars[2]));
+    shirt.position.set(faceX + streetSide * 0.5, 4.6, pz);
+    g.add(shirt);
+  }
+
+  // door
+  const door = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.8, 0.9), mat(PALETTE.door));
+  door.position.set(faceX + streetSide * 0.05, 0.9, pz + 2.0);
+  g.add(door);
+
+  return g;
+}
+
+export function createScarecrow(): THREE.Group {
+  const g = new THREE.Group();
+  const wood = mat(PALETTE.post);
+  const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.2, 0.12), wood);
+  post.position.y = 1.1;
+  g.add(post);
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.08, 0.08), wood);
+  arm.position.y = 1.6;
+  g.add(arm);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), mat(0xd8b878));
+  head.position.y = 2.35;
+  g.add(head);
+  const hat = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.4), mat(0x8a6f4a));
+  hat.position.y = 2.58;
+  g.add(hat);
+  return g;
+}
+
+export function createCropRow(): THREE.Group {
+  const g = new THREE.Group();
+  const bed = new THREE.Mesh(new THREE.BoxGeometry(3, 0.08, 10), mat(PALETTE.soil));
+  bed.position.y = 0.04;
+  g.add(bed);
+  const crop = mat(PALETTE.field);
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 10; c++) {
+      const s = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.5 + ((r + c) % 3) * 0.15, 0.18), crop);
+      s.position.set(-0.8 + r * 0.8, 0.35, -4.2 + c * 0.95);
+      s.castShadow = true;
+      g.add(s);
+    }
+  }
+  return g;
+}
+
+export function createSheep(): THREE.Group {
+  const g = new THREE.Group();
+  const wool = mat(PALETTE.sheep);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.5, 0.55), wool);
+  body.position.y = 0.45;
+  body.castShadow = true;
+  g.add(body);
+  const legGeo = new THREE.BoxGeometry(0.1, 0.3, 0.1);
+  const legMat = mat(0x3a3a3a);
+  for (const [lx, lz] of [[-0.3, -0.18], [0.3, -0.18], [-0.3, 0.18], [0.3, 0.18]] as const) {
+    const leg = new THREE.Mesh(legGeo, legMat);
+    leg.position.set(lx, 0.15, lz);
+    g.add(leg);
+  }
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.26, 0.26), mat(0x3a3a3a));
+  head.position.set(0, 0.5, 0.42);
+  g.add(head);
+  g.userData.head = head;
+  return g;
+}
+
+export function createWindmill(): THREE.Group {
+  const g = new THREE.Group();
+  const tower = mat(PALETTE.windmill);
+  for (const [w, h, y] of [
+    [2.2, 4, 2],
+    [1.7, 3, 5.5],
+    [1.2, 2.4, 8.2],
+  ] as const) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), tower);
+    m.position.y = y;
+    m.castShadow = true;
+    g.add(m);
+  }
+  const hub = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), mat(0x5a4632));
+  hub.position.set(0, 9.6, 0.9);
+  g.add(hub);
+  const blades = new THREE.Group();
+  blades.position.set(0, 9.6, 1.1);
+  const bladeMat = mat(0xd8d4c4);
+  for (let i = 0; i < 4; i++) {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(0.18, 4.4, 0.06), bladeMat);
+    b.position.y = 2.4;
+    const arm = new THREE.Group();
+    arm.rotation.z = (i * Math.PI) / 2;
+    arm.add(b);
+    blades.add(arm);
+  }
+  g.add(blades);
+  g.userData.blades = blades;
+  return g;
+}
+
+export function createBundle(): THREE.Group {
+  const g = new THREE.Group();
+  const pallet = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.08, 0.6), mat(PALETTE.post));
+  pallet.position.y = 0.04;
+  g.add(pallet);
+  for (let i = 0; i < 3; i++) {
+    const p = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.07, 0.5), mat(PALETTE.paper));
+    p.position.y = 0.12 + i * 0.07;
+    p.rotation.y = i * 0.2;
+    p.castShadow = true;
+    g.add(p);
+  }
+  return g;
+}
+
+export function createSkater(): THREE.Group {
+  const g = new THREE.Group();
+  const board = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.2), mat(0x8a6f4a));
+  board.position.y = 0.05;
+  g.add(board);
+  const legs = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.4, 0.18), mat(PALETTE.riderPants));
+  legs.position.y = 0.3;
+  g.add(legs);
+  const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.42, 0.2), mat(PALETTE.cars[2]));
+  shirt.position.y = 0.72;
+  shirt.castShadow = true;
+  g.add(shirt);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 0.24), mat(PALETTE.skin));
+  head.position.y = 1.1;
+  g.add(head);
+  const cap = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.1, 0.26), mat(0xc0392b));
+  cap.position.y = 1.24;
+  g.add(cap);
+  return g;
+}
+
+export function createRcCar(): THREE.Group {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.8), mat(0xc0392b));
+  body.position.y = 0.12;
+  body.castShadow = true;
+  g.add(body);
+  const wheelGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.06, 8);
+  const wheelMat = mat(0x22252a);
+  for (const [wx, wz] of [[-0.26, 0.3], [0.26, 0.3], [-0.26, -0.3], [0.26, -0.3]] as const) {
+    const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+    wheel.rotation.z = Math.PI / 2;
+    wheel.position.set(wx, 0.08, wz);
+    g.add(wheel);
+  }
+  return g;
+}
+
+export function createBee(): THREE.Group {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.12, 0.18), mat(0x2a2f3a));
+  g.add(body);
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.13, 0.08), mat(0xf1c40f));
+  stripe.position.z = -0.04;
+  g.add(stripe);
+  const wingGeo = new THREE.PlaneGeometry(0.14, 0.08);
+  const wingMat = mat(0xd8e8f0, { side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
+  const w1 = new THREE.Mesh(wingGeo, wingMat);
+  w1.position.set(-0.08, 0.08, 0);
+  w1.rotation.z = 0.5;
+  const w2 = w1.clone();
+  w2.position.x = 0.08;
+  w2.rotation.z = -0.5;
+  g.add(w1, w2);
+  g.userData = { wingL: w1, wingR: w2 };
   return g;
 }
 
@@ -236,13 +487,19 @@ export function createBikeRider(): THREE.Group {
   const g = new THREE.Group();
   const wheelGeo = new THREE.TorusGeometry(0.35, 0.05, 8, 20);
   const wheelMat = mat(0x22252a);
+  // wheels live in pivot groups so the spin is a clean pivot.rotation.x
+  const frontPivot = new THREE.Group();
+  frontPivot.position.set(0, 0.35, 0.55);
   const front = new THREE.Mesh(wheelGeo, wheelMat);
-  front.position.set(0, 0.35, 0.55);
   front.rotation.y = Math.PI / 2;
   front.castShadow = true;
-  const rear = front.clone();
-  rear.position.z = -0.55;
-  g.add(front, rear);
+  frontPivot.add(front);
+  const rearPivot = new THREE.Group();
+  rearPivot.position.set(0, 0.35, -0.55);
+  const rear = new THREE.Mesh(wheelGeo, wheelMat);
+  rear.rotation.y = Math.PI / 2;
+  rearPivot.add(rear);
+  g.add(frontPivot, rearPivot);
 
   const frameMat = mat(PALETTE.bike);
   const f1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 1.2), frameMat);
@@ -254,6 +511,8 @@ export function createBikeRider(): THREE.Group {
   f3.position.set(0, 0.9, -0.5);
   g.add(f1, f2, f3);
 
+  // the rider is a sub-group: the counterweight lean shifts it against the yaw
+  const rider = new THREE.Group();
   const torso = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.55, 0.3), mat(PALETTE.riderShirt));
   torso.position.set(0, 1.35, -0.1);
   torso.castShadow = true;
@@ -261,7 +520,8 @@ export function createBikeRider(): THREE.Group {
   head.position.set(0, 1.78, -0.1);
   const cap = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.12, 0.32), mat(PALETTE.riderPants));
   cap.position.set(0, 1.92, -0.1);
-  g.add(torso, head, cap);
+  rider.add(torso, head, cap);
+  g.add(rider);
 
   // paper stack on the rear rack
   const stack = new THREE.Group();
@@ -274,6 +534,8 @@ export function createBikeRider(): THREE.Group {
   }
   g.add(stack);
   g.userData.stack = stack;
+  g.userData.wheels = [frontPivot, rearPivot];
+  g.userData.rider = rider;
   return g;
 }
 

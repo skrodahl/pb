@@ -6,10 +6,19 @@ import {
   PALETTE,
   mat,
   createHouse,
+  createApartment,
   createTree,
   createFence,
   createBush,
   createMailbox,
+  createScarecrow,
+  createCropRow,
+  createSheep,
+  createWindmill,
+  createBundle,
+  createSkater,
+  createRcCar,
+  createBee,
   createCar,
   createBikeRider,
   createPaperMesh,
@@ -48,6 +57,11 @@ export class WorldScene {
   chimes: THREE.Group[] = [];
   carMeshes: THREE.Group[] = [];
   carAssign = new Map<number, number>(); // car id -> pool index
+  skaterMeshes: THREE.Group[] = [];
+  rcMeshes: THREE.Group[] = [];
+  beeMeshes: THREE.Group[] = [];
+  sheep: THREE.Group[] = [];
+  private windmillBlades: THREE.Group | null = null;
   bike: THREE.Group;
   paperMeshes: THREE.Mesh[] = [];
   birds: THREE.Group[] = [];
@@ -117,17 +131,20 @@ export class WorldScene {
       this.scene.add(curb);
     }
 
-    // houses + props
+    // houses + props (apartments reuse the cottage catch column at ground floor)
     const sx = (spec: { pos: [number, number] }) => (spec.pos[0] > 0 ? 1 : -1);
     cfg.houses.forEach((spec, i) => {
-      const h = createHouse(spec, i);
+      const h = spec.kind === 'apartment' ? createApartment(spec, i) : createHouse(spec, i);
       this.houseGroups.push(h);
       this.winGlows.push(h.userData.winGlowMat as THREE.MeshStandardMaterial);
-      this.chimes.push(h.userData.chime);
+      const chime = h.userData.chime as THREE.Group | undefined;
+      if (chime) this.chimes.push(chime);
       this.scene.add(h);
-      const box = createMailbox();
-      box.position.set(spec.porch.x * 1.15, 0, spec.porch.z - 2.6);
-      this.scene.add(box);
+      if (spec.role !== 'none') {
+        const box = createMailbox(spec.role === 'stopped');
+        box.position.set(spec.porch.x * 1.15, 0, spec.porch.z - 2.6);
+        this.scene.add(box);
+      }
       // yard dressing: fence run along the lot front, bushes between lots
       const fence = createFence();
       fence.position.set(sx(spec) * 12.8, 0, spec.porch.z + 15);
@@ -139,13 +156,82 @@ export class WorldScene {
       }
     });
 
-    // trees: two rows
+    // trees: left row along the whole route; right row only past the apartments
     for (let i = 0; i < 12; i++) {
-      for (const sx of [-1, 1]) {
-        const tree = createTree(i + (sx > 0 ? 1 : 2));
-        tree.position.set(sx * 13.5, 0, 20 + i * 20);
-        this.scene.add(tree);
+      const tree = createTree(i + 2);
+      tree.position.set(-13.5, 0, 20 + i * 20);
+      this.scene.add(tree);
+      if (i < 4) {
+        const tr = createTree(i + 1);
+        tr.position.set(13.5, 0, 20 + i * 20);
+        this.scene.add(tr);
       }
+    }
+
+    // right-side town scenery: fields, a sheep meadow, windmill at the turnaround
+    for (const z of [100, 115]) {
+      const row = createCropRow();
+      row.position.set(17, 0, z);
+      this.scene.add(row);
+    }
+    const scarecrow = createScarecrow();
+    scarecrow.position.set(21, 0, 105);
+    this.scene.add(scarecrow);
+    for (let i = 0; i < 4; i++) {
+      const s = createSheep();
+      const [sx, sz] = [
+        [15, 158],
+        [19, 168],
+        [15, 178],
+        [21, 188],
+      ][i];
+      s.position.set(sx, 0, sz);
+      s.rotation.y = i * 1.3;
+      this.sheep.push(s);
+      this.scene.add(s);
+    }
+    const mill = createWindmill();
+    mill.position.set(17, 0, 236);
+    this.scene.add(mill);
+    this.windmillBlades = mill.userData.blades as THREE.Group;
+
+    // intersections: cross-street band + zebra stripes
+    for (const z of [105, 195]) {
+      const cross = new THREE.Mesh(new THREE.PlaneGeometry(56, 8), mat(0x3a3f48));
+      cross.rotation.x = -Math.PI / 2;
+      cross.position.set(0, 0.005, z);
+      cross.receiveShadow = true;
+      this.scene.add(cross);
+      for (let s = 0; s < 6; s++) {
+        const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.02, 3.4), mat(0xd8d8c8));
+        stripe.position.set(-3.2 + s * 1.3, 0.03, z);
+        this.scene.add(stripe);
+      }
+    }
+
+    // paper bundles: ride over to restock
+    for (const [bx, bz] of cfg.bundles) {
+      const b = createBundle();
+      b.position.set(bx, 0, bz);
+      this.scene.add(b);
+    }
+
+    // obstacle pools: skaters, RC cars, bee swarm
+    for (let i = 0; i < 2; i++) {
+      const sk = createSkater();
+      sk.visible = false;
+      this.scene.add(sk);
+      this.skaterMeshes.push(sk);
+      const rc = createRcCar();
+      rc.visible = false;
+      this.scene.add(rc);
+      this.rcMeshes.push(rc);
+    }
+    for (let k = 0; k < 4; k++) {
+      const bee = createBee();
+      bee.visible = false;
+      this.scene.add(bee);
+      this.beeMeshes.push(bee);
     }
 
     // birds
@@ -197,20 +283,29 @@ export class WorldScene {
 
   // ---- per-frame sync -------------------------------------------------
 
-  updateBike(sim: GameSim): void {
+  updateBike(sim: GameSim, dt: number): void {
     const r = sim.rider;
     this.bike.position.set(r.x, 0, r.z);
-    this.bike.rotation.y = r.heading === 1 ? 0 : Math.PI;
+    // binary steer yaw: the bike angles into the turn; the rider counterweights
+    const turning = r.steer !== 0 && r.speed > 0.1;
+    const yaw = turning ? -Math.sign(r.steer) * 0.35 : 0;
+    this.bike.rotation.y = (r.heading === 1 ? 0 : Math.PI) + yaw;
+    this.bike.rotation.z = turning ? -Math.sign(yaw) * 0.12 : 0; // lean into the turn
     const stack = this.bike.userData.stack as THREE.Group;
     stack.children.forEach((p, i) => (p.visible = sim.held > i));
+    const riderG = this.bike.userData.rider as THREE.Group;
+    riderG.rotation.z = turning ? Math.sign(yaw) * 0.06 : 0; // counterweight: opposite of the lean
+    for (const p of this.bike.userData.wheels as THREE.Group[]) {
+      p.rotation.x -= (r.speed / 0.35) * dt;
+    }
     // shadow light + camera follow the rider (frustum stays centered on view)
     const [ox, oy, oz] = this.sunOff;
     this.sun.position.set(r.x + ox, oy, r.z + oz);
     this.sun.target.position.set(0, 0, r.z);
   }
 
-  updateCars(sim: GameSim): void {
-    const active = sim.traffic.cars.filter((c) => c.active);
+  updateObstacles(sim: GameSim): void {
+    const active = sim.obstacles.cars.filter((c) => c.active);
     for (const [id, idx] of this.carAssign) {
       if (!active.some((c) => c.id === id)) {
         this.carMeshes[idx].visible = false;
@@ -227,8 +322,33 @@ export class WorldScene {
       }
       const m = this.carMeshes[idx];
       m.position.set(car.x, 0, car.z);
-      m.rotation.y = car.dir === 1 ? 0 : Math.PI;
+      m.rotation.y = car.dir === 1 ? Math.PI / 2 : -Math.PI / 2; // crossing perpendicular
       void k;
+    });
+    const skActive = sim.obstacles.skaters.filter((s) => s.active);
+    this.skaterMeshes.forEach((m, i) => {
+      const s = skActive[i];
+      m.visible = s !== undefined;
+      if (s) {
+        m.position.set(s.x, 0, s.z);
+        m.rotation.y = s.z > sim.rider.z ? Math.PI : 0; // rides toward the rider
+      }
+    });
+    const rcActive = sim.obstacles.rccars.filter((c) => c.active);
+    this.rcMeshes.forEach((m, i) => {
+      const c = rcActive[i];
+      m.visible = c !== undefined;
+      if (c) {
+        m.position.set(c.x, 0, c.z);
+        m.rotation.y = -Math.PI / 2; // crosses in -x
+      }
+    });
+    sim.bees.bees.forEach((b, i) => {
+      const m = this.beeMeshes[i];
+      m.visible = sim.bees.active;
+      if (sim.bees.active) {
+        m.position.set(b.x, 1.4 + Math.sin(this.time * 9 + b.phase) * 0.25, b.z);
+      }
     });
   }
 
@@ -296,6 +416,18 @@ export class WorldScene {
 
   tick(dt: number): void {
     this.time += dt;
+    if (this.windmillBlades) this.windmillBlades.rotation.z += dt * 0.8;
+    this.sheep.forEach((s, i) => {
+      const head = s.userData.head as THREE.Mesh;
+      head.position.y = 0.5 + Math.sin(this.time * 2 + i * 1.7) * 0.04;
+      head.rotation.x = Math.sin(this.time * 0.5 + i * 2.1) * 0.35;
+    });
+    this.beeMeshes.forEach((m, i) => {
+      const u = m.userData as { wingL: THREE.Mesh; wingR: THREE.Mesh };
+      const flap = Math.sin(this.time * 30 + i) * 0.8;
+      u.wingL.rotation.x = flap;
+      u.wingR.rotation.x = -flap;
+    });
   }
 
   render(): void {

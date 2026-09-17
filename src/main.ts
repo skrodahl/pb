@@ -1,7 +1,6 @@
 import { WorldScene } from './render/scene';
 import { ChaseCamera } from './render/camera';
 import { RainFX } from './render/rain';
-import { LandingMarker } from './render/marker';
 import { PALETTE } from './render/models';
 import { DAY_1 } from './data/days/day1';
 import { GameSim } from './sim/sim';
@@ -37,7 +36,6 @@ const chaseCam = new ChaseCamera(world.camera);
 const rain = new RainFX(world.scene, [
   { mat: world.groundMat, dry: PALETTE.grass, wet: PALETTE.grassWet },
 ]);
-const marker = new LandingMarker(world.scene);
 const loop = new FixedLoop(1 / 60, 0.1);
 
 // first user gesture unlocks audio
@@ -118,12 +116,25 @@ function frame() {
           audio.sfx('scatter');
           chaseCam.addShake(0.5);
           break;
+        case 'horn':
+          audio.sfx('horn');
+          break;
+        case 'bundle':
+          audio.sfx('ding');
+          break;
+        case 'bee_hit':
+          audio.sfx('buzz');
+          chaseCam.addShake(0.3);
+          break;
         case 'rain_start':
           rain.setRaining(true);
           audio.setRainMusic(true);
           break;
         case 'delivery':
-          audio.sfx(e.kind === 'wrong' ? 'buzz' : 'ding');
+          audio.sfx(e.kind === 'late' ? 'buzz' : 'ding');
+          break;
+        case 'smash':
+          audio.sfx('shatter');
           break;
         case 'missed':
           audio.sfx('buzz');
@@ -138,8 +149,8 @@ function frame() {
   });
 
   world.tick(dt);
-  world.updateBike(sim);
-  world.updateCars(sim);
+  world.updateBike(sim, dt);
+  world.updateObstacles(sim);
   world.updatePapers(sim);
   world.updateWindowMarks(sim);
   world.updateChimes(time, sim.weather.wind);
@@ -147,22 +158,22 @@ function frame() {
   world.setSun(sim.clockMin, sim.config.time.length);
   chaseCam.update(dt, sim);
   rain.update(dt, world.camera.position, sim.weather.wind);
-  marker.update(sim, time);
 
   if (state === 'riding') {
     hud.setClock(DAY_1.time.start + sim.clockMin);
-    hud.setNet(sim.tally().net);
+    hud.setScore(sim.tally().score);
     hud.setPapers(sim.held);
-    hud.setCharge(sim.rider.charging ? sim.rider.charge : 0);
     const nt = sim.nextTarget();
     if (nt !== null) {
       const h = sim.houses[nt];
       const dist = Math.max(0, Math.round(Math.abs(h.spec.pos[1] - sim.rider.z)));
       const w0 = minToTime(DAY_1.time.start + h.spec.window[0]);
       const w1 = minToTime(DAY_1.time.start + h.spec.window[1]);
-      hud.setNext(
-        `${h.spec.customer} ${w0}–${w1}${h.spec.subscribes ? '' : ' (NO SUB)'} · ${dist}m`,
-      );
+      const label =
+        h.spec.role === 'stopped'
+          ? `SMASH ${h.spec.customer} · ${dist}m`
+          : `NEXT ${h.spec.customer} ${w0}–${w1} · ${dist}m`;
+      hud.setNext(label);
     } else {
       hud.setNext(null);
     }
@@ -185,14 +196,9 @@ window.addEventListener('error', () => ((window as any).__errcount++));
   world,
   rain,
   chaseCam,
-  marker,
   audio,
   toRain() {
     sim.clockMin = sim.config.weather.rainAfter - 0.05;
-  },
-  toCharge() {
-    sim.rider.charging = true;
-    sim.rider.charge = 0.8;
   },
   toTally() {
     sim.clockMin = sim.config.time.length - 0.5;

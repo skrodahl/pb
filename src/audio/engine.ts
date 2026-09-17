@@ -8,7 +8,8 @@ export type SfxName =
   | 'jingle'
   | 'horn'
   | 'chime'
-  | 'buzz';
+  | 'buzz'
+  | 'shatter';
 
 const MUSIC_STEP = 0.28;
 const LEAD = [523, 0, 659, 523, 784, 659, 587, 523, 440, 523, 659, 784, 880, 784, 659, 587];
@@ -106,6 +107,10 @@ export class AudioEngine {
         break;
       case 'buzz':
         this.tone(t, 110, 110, 0.3, 'sawtooth', 0.12);
+        break;
+      case 'shatter':
+        this.noiseBurst(t, 0.3, { type: 'highpass', f0: 1500, f1: 5000, gain: 0.35 });
+        [3135, 3968, 2637].forEach((f, i) => this.tone(t + i * 0.04, f, f * 0.6, 0.15, 'triangle', 0.08));
         break;
     }
   }

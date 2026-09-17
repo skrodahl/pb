@@ -25,31 +25,43 @@ export function showTitle(root: HTMLElement): void {
     `<div class="title-sub">a paperboy-inspired 3D delivery game</div>
      <div class="controls">
        <div>W / S &nbsp; pedal &middot; brake</div>
-       <div>A / D &nbsp; lean left &middot; right</div>
-       <div>SPACE (hold) &nbsp; aim &middot; release to throw</div>
+       <div>A / D &nbsp; steer</div>
+       <div>SPACE (tap) &nbsp; sideways throw at the next house</div>
      </div>
-     <div class="title-sub">deliver to every subscriber before their window closes.</div>
-     <div class="title-sub dim">rain is coming.</div>`,
+     <div class="title-sub">line up with the house, tap the throw, bank the points.</div>
+     <div class="title-sub dim">stop mailboxes are your bonus. rain is coming.</div>`,
     'PRESS ENTER TO START',
   );
 }
 
 export function showBriefing(root: HTMLElement, cfg: DayConfig): void {
   const start = cfg.time.start;
-  const rows = cfg.houses
-    .map((h) => {
-      const t0 = minToTime(start + h.window[0]);
-      const t1 = minToTime(start + h.window[1]);
-      const sub = h.subscribes ? 'SUB' : 'NO SUB';
-      const cls = h.subscribes ? 'sub' : 'nsub';
-      return `<tr><td>${h.customer}</td><td>${t0}–${t1}</td><td class="${cls}">${sub}</td></tr>`;
-    })
+  const subs = cfg.houses.filter((h) => h.role === 'sub');
+  const stopped = cfg.houses.filter((h) => h.role === 'stopped');
+  const row = (h: (typeof subs)[number], cls: string, tag: string) => {
+    const t0 = minToTime(start + h.window[0]);
+    const t1 = minToTime(start + h.window[1]);
+    return `<tr><td>${h.customer} <span class="dim">${h.pos[0] < 0 ? 'LEFT' : 'RIGHT'}</span></td><td>${t0}–${t1}</td><td class="${cls}">${tag}</td></tr>`;
+  };
+  const rows = [
+    ...subs.map((h) => row(h, 'sub', 'SUB')),
+    ...stopped.map((h) => `<tr><td>${h.customer} <span class="dim">${h.pos[0] < 0 ? 'LEFT' : 'RIGHT'}</span></td><td>—</td><td class="nsub">STOPPED</td></tr>`),
+  ].join('');
+  // route strip: the street top-to-bottom, colored by role
+  const strip = cfg.houses
+    .map(
+      (h) =>
+        `<div class="route-house ${h.role}" title="${h.customer}"></div>`,
+    )
     .join('');
   card(
     root,
     'PB DAILY — ' + cfg.name.toUpperCase(),
-    `Deliver every paper to its <b>subscriber</b> inside the window. Papers thrown at a
-     house with <span class="nsub">NO SUB</span> cost you. Rain later today makes papers wet.
+    `Deliver every <b>subscriber</b> paper inside its window: line up with the house, tap the
+     throw, the paper flies sideways. Throwing early (perfectly parallel) pays more.
+     Smashing a <span class="nsub">STOPPED</span> mailbox's window pays 200. Watch the road:
+     crossing cars, skaters, RC cars — and don't stop pedaling.
+     <div class="route-strip">${strip}</div>
      <table class="sched">${rows}</table>`,
     'PRESS ENTER TO RIDE',
   );
@@ -59,20 +71,20 @@ export function showTally(root: HTMLElement, tally: Tally): void {
   const lines: [string, string | number][] = [
     ['Clean', tally.clean],
     ['Late', tally.late],
-    ['Wrong house', tally.wrong],
+    ['Smashed', tally.smashed],
     ['Missed', tally.missed],
     ['Papers lost', tally.lost],
-    ['Hit by paper', tally.hits],
   ];
+  const rank =
+    tally.score >= 2000 ? 'S' : tally.score >= 1400 ? 'A' : tally.score >= 800 ? 'B' : 'C';
   card(
     root,
     'END OF DAY',
     `<table class="tally">${lines
       .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`)
       .join('')}</table>
-     <div class="money"><span>earned</span><b>+$${tally.earned.toFixed(2)}</b></div>
-     <div class="money"><span>fines</span><b>-$${tally.fined.toFixed(2)}</b></div>
-     <div class="money net"><span>net</span><b>${tally.net >= 0 ? '+' : '-'}$${Math.abs(tally.net).toFixed(2)}</b></div>`,
+     <div class="money"><span>score</span><b>${tally.score}</b></div>
+     <div class="rank">${rank}</div>`,
     'PRESS ENTER TO RIDE AGAIN',
   );
 }

@@ -13,9 +13,9 @@ export class ChaseCamera {
     const f = r.heading;
     const speedK = r.speed / MAX_SPEED;
     const back = 7.5 + 2.5 * speedK;
-    const up = 4.2 - (r.charging ? 0.9 : 0) - 0.4 * speedK;
+    const up = 4.2 - 0.4 * speedK;
     const side = 3.4 * f;
-    const target = new THREE.Vector3(r.x + r.aim * 0.25 + side, up, r.z - f * back);
+    const target = new THREE.Vector3(r.x + side, up, r.z - f * back);
     this.pos.lerp(target, 1 - Math.exp(-4.5 * dt));
     if (this.shake > 0.001) {
       this.shake *= Math.exp(-6 * dt);
@@ -23,9 +23,7 @@ export class ChaseCamera {
       this.pos.y += (Math.random() - 0.5) * this.shake * 0.5;
     }
     this.cam.position.copy(this.pos);
-    this.cam.lookAt(
-      new THREE.Vector3(r.x + r.aim * 0.4 + f * 1.0, 1.2, r.z + f * (5 + 4 * speedK)),
-    );
+    this.cam.lookAt(new THREE.Vector3(r.x + f * 1.0, 1.2, r.z + f * (5 + 4 * speedK)));
   }
 
   addShake(amount: number): void {

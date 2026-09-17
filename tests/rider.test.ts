@@ -1,5 +1,4 @@
-import { newRider, stepRider, landingPoint } from '../src/sim/rider';
-import { ASSIST_X } from '../src/sim/types';
+import { newRider, stepRider } from '../src/sim/rider';
 import type { InputActions } from '../src/sim/types';
 
 const act = (o: Partial<InputActions> = {}): InputActions => ({
@@ -36,7 +35,7 @@ test('turnaround at both ends', () => {
   expect(r.heading).toBe(1);
 });
 
-test('steering is screen-relative: D moves toward -x on the outbound leg (not charging)', () => {
+test('steering is screen-relative: D moves toward -x on the outbound leg', () => {
   const r = newRider();
   r.speed = 5;
   for (let i = 0; i < 180; i++) stepRider(r, 1 / 60, act({ steer: 1 }));
@@ -44,7 +43,7 @@ test('steering is screen-relative: D moves toward -x on the outbound leg (not ch
   expect(r.x).toBeGreaterThanOrEqual(-3.2);
 });
 
-test('steering flips with heading on the return leg (not charging)', () => {
+test('steering flips with heading on the return leg', () => {
   const r = newRider();
   r.heading = -1;
   r.z = 100;
@@ -53,30 +52,17 @@ test('steering flips with heading on the return leg (not charging)', () => {
   expect(r.x).toBeGreaterThanOrEqual(3.1);
 });
 
-test('charging holds the lane: x does not drift while aiming', () => {
+test('rider.steer mirrors the input every step (for the render yaw)', () => {
   const r = newRider();
-  r.x = 1.5;
-  for (let i = 0; i < 120; i++) stepRider(r, 1 / 60, act({ throwHeld: true, steer: 1 }));
-  expect(r.x).toBeCloseTo(1.5, 5);
+  stepRider(r, 1 / 60, act({ steer: 1 }));
+  expect(r.steer).toBe(1);
+  stepRider(r, 1 / 60, act({ steer: -1 }));
+  expect(r.steer).toBe(-1);
+  stepRider(r, 1 / 60, act());
+  expect(r.steer).toBe(0);
 });
 
-test('assistent aim: no steer pulls aim toward the assist side', () => {
-  const r = newRider();
-  for (let i = 0; i < 120; i++) stepRider(r, 1 / 60, act({ throwHeld: true }), -ASSIST_X);
-  expect(r.aim).toBeLessThan(-2); // 0.25 * -9 = -2.25 target
-});
-
-test('charge ramps 0..1; charge curve is soft (half charge ~ 9.3 m)', () => {
-  const r = newRider();
-  for (let i = 0; i < 60; i++) stepRider(r, 1 / 60, act({ throwHeld: true }));
-  expect(r.charge).toBeCloseTo(1, 1);
-  r.charge = 0.5;
-  expect(landingPoint(r).z - r.z).toBeCloseTo(4 + 14 * Math.pow(0.5, 1.4), 1);
-  r.charge = 1;
-  expect(landingPoint(r).z - r.z).toBeCloseTo(18, 1);
-});
-
-test('stagger freezes speed and aim', () => {
+test('stagger freezes speed and steer', () => {
   const r = newRider();
   r.stagger = 1.2;
   r.speed = 9;

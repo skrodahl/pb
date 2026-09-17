@@ -9,9 +9,7 @@ export interface Rider {
   heading: 1 | -1;
   speed: number;
   stagger: number;
-  charging: boolean;
-  charge: number;
-  aim: number;
+  steer: -1 | 0 | 1;
 }
 
 export interface Paper {
@@ -25,31 +23,52 @@ export interface Paper {
   state: 'flying' | 'settled' | 'gone';
   bounces: number;
   target: number | null;
+  precision: number; // 1 - |dz|/WIN_Z_HALF at throw; drives the clean bonus
 }
 
-export interface Car {
+// Street obstacles: cars cross at intersections (perpendicular to the route);
+// skaters ride toward you down a lane; RC cars cross the road from a yard.
+export interface CrossCar {
   id: number;
+  z: number; // intersection z (fixed)
   x: number;
-  z: number;
-  dir: 1 | -1;
+  dir: 1 | -1; // +1 = crossing in +x
   speed: number;
   active: boolean;
   colorIndex: number;
 }
 
-export type HouseState = 'pending' | 'clean' | 'late' | 'wrong' | 'missed';
+export interface Skater {
+  id: number;
+  x: number;
+  z: number;
+  active: boolean;
+  age: number;
+}
+
+export interface Rccar {
+  id: number;
+  z: number; // crossing z (fixed)
+  x: number;
+  active: boolean;
+}
+
+export type HouseState = 'pending' | 'clean' | 'late' | 'smashed' | 'missed';
 
 export interface HouseSim {
   spec: HouseSpec;
   state: HouseState;
-  pay: number;
+  pts: number;
 }
+
+export type HouseRole = 'sub' | 'stopped' | 'none'; // deliver / smash target / scenery
 
 export interface HouseSpec {
   pos: [number, number]; // [x, z] house center (x<0 left, x>0 right)
   customer: string;
-  subscribes: boolean;
-  window: [number, number]; // clock minutes [open, close]
+  role: HouseRole;
+  kind?: 'cottage' | 'apartment';
+  window: [number, number]; // clock minutes [open, close] (subs only)
   porch: { x: number; z: number; w: number; d: number }; // center + full extents
 }
 
@@ -58,7 +77,14 @@ export interface DayConfig {
   name: string;
   time: { start: number; length: number }; // minutes: start = game-clock minutes at 07:00; length = total clock minutes
   houses: HouseSpec[];
-  traffic: { interval: number; jitter: number; speed: number; seed: number };
+  obstacles: {
+    crossZ: number[]; // intersection z positions (cars cross perpendicular to the route)
+    crossEvery: number[]; // spawn interval (s) per intersection
+    skaterEvery: [number, number]; // min/max seconds between skaters
+    rcEvery: [number, number]; // min/max seconds between RC cars
+    seed: number;
+  };
+  bundles: [number, number][]; // paper pickup stacks [x, z]
   weather: {
     rainAfter: number;
     windBefore: [number, number];
@@ -80,29 +106,30 @@ export interface Weather {
 
 export type SimEvent =
   | { type: 'paper_thrown'; paperId: number }
-    | {
+  | {
       type: 'paper_landed';
       paperId: number;
       houseIndex: number | null;
       kind: 'window' | 'yard' | 'road';
     }
   | { type: 'paper_hit_rider'; paperId: number }
-  | { type: 'car_hit' }
+  | { type: 'car_hit'; kind: 'cross' | 'skater' | 'rc' }
+  | { type: 'horn'; z: number }
+  | { type: 'bundle'; index: number }
+  | { type: 'bee_hit' }
   | { type: 'rain_start' }
-  | { type: 'delivery'; houseIndex: number; kind: 'clean' | 'late' | 'wrong' }
+  | { type: 'delivery'; houseIndex: number; kind: 'clean' | 'late' }
+  | { type: 'smash'; houseIndex: number }
   | { type: 'missed'; houseIndex: number }
   | { type: 'day_end'; tally: Tally };
 
 export interface Tally {
   clean: number;
   late: number;
-  wrong: number;
+  smashed: number;
   missed: number;
   lost: number;
-  hits: number;
-  earned: number;
-  fined: number;
-  net: number;
+  score: number;
 }
 
 export const ROUTE_LEN = 240;
@@ -111,21 +138,27 @@ export const ACCEL = 8;
 export const BRAKE_DECEL = 16;
 export const DRAG = 2;
 export const MIN_PER_SEC = 1; // 1 real second = 1 game minute
-export const THROW_MIN = 4;
-export const THROW_MAX = 18;
-export const CHARGE_TIME = 1.0;
-export const AIM_RATE = 6;
 export const GRAV = 9.8;
 export const YARD_IN = 4.6; // curb line (|x|)
 export const YARD_OUT = 9; // yard outer edge (|x|)
 
-// v2 window-delivery model (catch-column: the window catches the paper by x/z)
-export const AIM_REACH = 9.5; // rider.aim max (lean); reaches face 8.5 + 1 m into the wall
-export const ASSIST_X = 9.0; // gentle-assist target magnitude (face + 0.5)
+// v3 sideways-throw model: tap throw, paper flies laterally to the target's
+// catch column while you keep riding. Lining up with the house = timing.
+export const PAPER_T = 0.55; // sideways flight time (s)
 export const WIN_Z_HALF = 1.2; // window z half-width
 export const GROUND_Y = 0.1; // lost-paper settle height (lawn/road)
-export const PAPER_Y0 = 2.5; // release height (flat high toss, descends by gravity)
+export const PAPER_Y0 = 2.5; // release height
 export const WINDOW_Y_MID = 1.45; // delivered paper settles here, inside the glass
+export const MAX_HELD = 16;
+
+// arcade scoring (points only)
+export const PTS = {
+  cleanBase: 100,
+  cleanPrecision: 150, // bonus scaled by 1 - |dz|/WIN_Z_HALF at throw
+  late: 50,
+  smash: 200,
+  bundle: 5, // papers gained per bundle (not points)
+} as const;
 
 // street face of a house: body is 5 wide centered on pos[0] (±11)
 export function faceX(pos: [number, number]): number {

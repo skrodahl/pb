@@ -34,8 +34,8 @@ test('deterministic: same seed + inputs => identical run', () => {
           typeof n === 'number' ? Math.round(n * 1000) / 1000 : n,
         ),
       ),
-      c: sim.traffic.cars.map((c) =>
-        [c.z, c.colorIndex, c.active].map((n) =>
+      c: sim.obstacles.cars.map((c) =>
+        [c.x, c.z, c.colorIndex, c.active].map((n) =>
           typeof n === 'number' ? Math.round(n * 1000) / 1000 : n,
         ),
       ),
@@ -58,24 +58,62 @@ test('day ends with day_end + tally, exactly once', () => {
   expect(sim.done).toBe(true);
   const dayEnds = evs.filter((e) => e.type === 'day_end');
   expect(dayEnds).toHaveLength(1);
-  expect(dayEnds[0].tally.net).toBeDefined();
+  expect(dayEnds[0].tally.score).toBeDefined();
 });
 
-test('nextTarget: nearest pending subscriber ahead in travel direction, skipping NO-SUB', () => {
+test('nextTarget: nearest actionable house ahead (subs and stopped), skipping done houses', () => {
   const sim = new GameSim(DAY_1, 7);
-  // outbound, at the start: first subscriber house ahead (z=30)
+  // outbound at the start: first house ahead is Hargitay (z=30, sub)
   sim.rider.z = 3;
   sim.rider.heading = 1;
   expect(sim.nextTarget()).toBe(0);
-  // Okafor (idx 2, z=90) is NO-SUB: rider just past it must skip to Delgado (idx 3, z=120)
+  // rider just past Okafor (idx 2, z=90, stopped): next actionable is Delgado (idx 3, z=120)
   sim.rider.z = 95;
   sim.rider.heading = 1;
   expect(sim.nextTarget()).toBe(3);
-  // return leg: nearest pending subscriber BEHIND (z < rider.z)
+  // return leg: nearest actionable BEHIND (z < rider.z)
   sim.rider.z = 200;
   sim.rider.heading = -1;
-  expect(sim.nextTarget()).toBe(13); // Lindqvist, z=180
+  expect(sim.nextTarget()).toBe(10); // Reyes apartment (z=195, sub)
 });
 
-// NOTE: the end-to-end "throw through the window" test lands with Task 2,
-// which is where the rider's aim model can actually reach the house faces.
+test('riding over a bundle restocks papers (capped) and emits bundle', () => {
+  const sim = new GameSim(DAY_1, 7);
+  sim.rider.z = 60;
+  sim.rider.x = -5.8; // bundle 0 at (-5.8, 60)
+  sim.held = 10;
+  sim.step(1 / 60, act());
+  expect(sim.held).toBe(15);
+  expect(sim.bundlesTaken.has(0)).toBe(true);
+  expect(sim.drainEvents().some((e) => e.type === 'bundle' && e.index === 0)).toBe(true);
+});
+
+test('stalling lets the bees show up and bump the rider', () => {
+  const sim = new GameSim(DAY_1, 7);
+  const evs: SimEvent[] = [];
+  sim.rider.speed = 0;
+  for (let i = 0; i < 60 * 8; i++) {
+    sim.step(1 / 60, act());
+    for (const e of sim.drainEvents()) evs.push(e);
+  }
+  expect(evs.some((e) => e.type === 'bee_hit')).toBe(true);
+});
+
+test('a crash scatters papers off the rack', () => {
+  const sim = new GameSim(DAY_1, 7);
+  sim.rider.z = 105;
+  sim.rider.x = 0;
+  sim.obstacles.cars.push({
+    id: 999,
+    z: 105,
+    x: 0,
+    dir: 1,
+    speed: 6,
+    active: true,
+    colorIndex: 0,
+  });
+  const before = sim.papers.length;
+  sim.step(1 / 60, act());
+  expect(sim.rider.stagger).toBeGreaterThan(0);
+  expect(sim.papers.length).toBeGreaterThan(before);
+});
