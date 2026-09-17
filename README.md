@@ -1,9 +1,10 @@
 # PB
 
 A 3D browser game inspired by Data East's 1987 arcade *Paperboy*.
-You ride a bicycle down a suburban street, throw newspapers onto porches
-inside each customer's delivery window, dodge cars, and ride through the
-rain that's coming — then watch your end-of-day tally.
+You ride a bicycle down a cozy voxel suburb, throw newspapers
+**through the street-side window** of each customer inside their
+delivery window, dodge cars, and ride through the rain that's coming —
+then watch your end-of-day tally.
 
 ## Run it
 
@@ -24,9 +25,15 @@ npx vite preview
 | Key | Action |
 | --- | --- |
 | `W` / `S` | pedal / brake |
-| `A` / `D` | lean left / right |
-| `Space` (hold) | aim — release to throw |
+| `A` / `D` | steer the bike (holds your lane while you're aiming) |
+| `Space` (hold) | aim + charge the throw — release to throw |
 | `Enter` | advance screens |
+
+While charging, `A`/`D` lean the *throw*, not the bike: the paper
+flies out at up to ~10 m sideways. A gentle assist eases your aim
+toward the next subscriber's window, and the marker shows your
+wind-corrected landing — green when the paper crosses the target
+window, amber otherwise.
 
 ## Debug states
 
@@ -36,12 +43,13 @@ Load the page with `?debug=...` to jump straight to a game state
 | Flag | State |
 | --- | --- |
 | `?debug=ride` | auto-throttle — general framing check |
-| `?debug=charge` | auto-throttle + throw cycles — landing marker mid-charge |
+| `?debug=charge` | auto-throttle + auto-aimed throw cycles (leans toward the next subscriber's window) |
 | `?debug=rain` | clock fast-forwarded to rain onset |
 | `?debug=tally` | clock fast-forwarded to end of day — full tally screen |
 
 A `window.__pb` debug hook is exposed in the browser console:
-`{ sim, state, world, rain, chaseCam, marker, audio, toRain(), toCharge(), toTally() }`.
+`{ sim, state, world, rain, chaseCam, marker, audio, toRain(), toCharge(), toTally() }`,
+plus `window.__errcount` (uncaught error counter).
 
 ## Architecture
 
@@ -50,6 +58,15 @@ A `window.__pb` debug hook is exposed in the browser console:
   (`src/core/rng.ts`). It has zero renderer imports, so runs are
   deterministic and fully unit-testable (`tests/`, `npx vitest run`).
   The renderer (`src/render/`) only *reads* sim state each frame.
+- **Window delivery model.** A paper is delivered when its (x,z) path
+  enters the target window's *catch column* (street face of the house,
+  ±1.2 m of the house's z) — it settles inside the glass at window
+  height. Wall misses bounce back toward the road and skid; lawn and
+  road landings are lost. Constants live in `src/sim/types.ts`
+  (`faceX`, `WIN_Z_HALF`, `PAPER_Y0`, ...).
+- **Camera:** a 3/4 diagonal chase cam (`src/render/camera.ts`) —
+  the lateral offset follows the rider's heading, mirroring on the
+  return leg.
 - **Procedural assets.** Models, sky, audio are all generated in code
   (low-poly builders in `src/render/models.ts`, chiptune/ambience in
   `src/audio/engine.ts`) — no binary asset pipeline.

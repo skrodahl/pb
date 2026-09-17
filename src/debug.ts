@@ -15,10 +15,24 @@ export function applyDebug(state: DebugState, sim: GameSim): void {
   if (state === 'tally') sim.clockMin = sim.config.time.length - 0.5;
 }
 
-export function autoInput(state: DebugState, t: number, base: InputActions): InputActions {
+export function autoInput(
+  state: DebugState,
+  t: number,
+  base: InputActions,
+  sim?: GameSim,
+): InputActions {
   if (state === 'ride') return { ...base, throttle: true };
   if (state === 'charge') {
-    return { ...base, throttle: true, throwHeld: t % 3 < 1.2 };
+    const throwing = t % 3 < 1.2;
+    // lean the throw toward the next target's side of the street
+    let steer: -1 | 0 | 1 = 0;
+    if (throwing && sim) {
+      const target = sim.nextTarget();
+      if (target !== null) {
+        steer = (-Math.sign(sim.houses[target].spec.pos[0]) * sim.rider.heading) as -1 | 0 | 1;
+      }
+    }
+    return { ...base, throttle: true, throwHeld: throwing, steer };
   }
   return base; // rain/tally: idle ride to the state
 }

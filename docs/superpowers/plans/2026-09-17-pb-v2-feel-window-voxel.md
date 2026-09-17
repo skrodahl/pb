@@ -82,7 +82,7 @@ Sanity check (outbound, no wind, rider x=0, charge 0.95, aim 9.0, T=0.7): paper 
 
 The resolution order per flight step: (1) **window crossing** — paper at/past the face slab (`|x|` within 0.2 of face outward, not deeper than face+2.0), y in [WIN_Y_LO, WIN_Y_HI], z within WIN_Z_HALF of the house → `settled` just inside the glass, `w.deliver(i)`, event `paper_landed kind:'window'`; (2) **wall hit** — at the face (z within house depth 3.0) but y outside the band → bounce: clamp x just outside the face, `vx = -sign(vx)*|vx|*0.55`, `vz *= 0.35`, small pop `vy = max(vy, 0.4)`, `bounces++`, first bounce emits `kind:'yard'` (skid sfx), `bounces > 2` → gone + lost (skidding papers can still strike the rider via the existing hit check); (3) **ground** — `y ≤ GROUND_Y && vy < 0` → gone + lost, `kind` by `|x| < YARD_IN ? 'road' : 'yard'` (yard bounce is GONE in v2 — landing on the lawn is a miss). Out-of-bounds and rider-hit checks carry over unchanged.
 
-- [ ] **Step 1: Rewrite `tests/papers.test.ts` for the window model** (fixture: house at `pos [11, 18]`, face 8.5, band z ∈ [16.8, 19.2], y ∈ [0.5, 2.4]; rider z=3):
+- [x] **Step 1: Rewrite `tests/papers.test.ts` for the window model** (fixture: house at `pos [11, 18]`, face 8.5, band z ∈ [16.8, 19.2], y ∈ [0.5, 2.4]; rider z=3):
 
 ```ts
 import { launchPaper, stepPapers, PAPER_FLIGHT_T } from '../src/sim/papers';
@@ -200,12 +200,12 @@ test('wind shifts the crossing downwind', () => {
 
 Note: the first test's numbers (charge 1, aim 9.0, house z=18) are the plan's worked example — if the crossing misses the z-band by a step, adjust `houseZ`/`charge` in the test until the geometry matches the worked example above (t_f ≈ 0.64 s, y_c ≈ 1.4 m); the assertions are about *behavior* (delivered, settled inside the glass, event kind), not the exact charge.
 
-- [ ] **Step 2: Run tests, verify they fail**
+- [x] **Step 2: Run tests, verify they fail**
 
 Run: `npx vitest run tests/papers.test.ts`
 Expected: FAIL (constants/functions not defined; old resolution still in place)
 
-- [ ] **Step 3: Implement in `types.ts`**
+- [x] **Step 3: Implement in `types.ts`**
 
 ```ts
 export const AIM_REACH = 9.5;
@@ -223,7 +223,7 @@ export function faceX(pos: [number, number]): number {
 
 Update `SimEvent`'s `paper_landed` kind to `'window' | 'yard' | 'road'`. Remove `PAPER_Y_LAND` (replaced by `GROUND_Y`).
 
-- [ ] **Step 4: Rewrite the flight resolution in `papers.ts`**
+- [x] **Step 4: Rewrite the flight resolution in `papers.ts`**
 
 ```ts
 import type { Paper, Rider, HouseSim, SimEvent } from './types';
@@ -371,7 +371,7 @@ export function stepPapers(w: PaperWorld, papers: Paper[], dt: number): void {
 
 `inPorch` stays exported (still used by tests/`PaperWorld` consumers) but is no longer in the resolution path.
 
-- [ ] **Step 5: `sim.ts` assist + kind wiring**
+- [x] **Step 5: `sim.ts` assist + kind wiring**
 
 In `GameSim.step`, replace the porch-based assist source (there is none yet in v1 — add):
 
@@ -384,14 +384,14 @@ stepRider(this.rider, dt, input, assistX);
 
 (`stepRider` gains the `assistX` parameter in Task 2; until then pass it to the existing signature as the 4th arg and add the param in Task 2's first step — keep the tasks' commits independent by doing Task 2 immediately after.)
 
-- [ ] **Step 6: Update `tests/sim.test.ts`** — 'throwing a paper at a porch in window pays clean' becomes 'throwing through the window in-window pays clean': rider `z = 18`, `x = 0`, `heading = 1`, `clockMin = 25` (house 0 left, window [20,40]), 47 frames `act({ steer: 1, throwHeld: true })` then release — with Task 2's aim/assist in place the paper crosses the left face inside house 0's z-band (worked example: z_c ≈ 30.7, band [28.8, 31.2]). Keep the `pay ≥ 2` and `held < 16` assertions.
+- [x] **Step 6: Update `tests/sim.test.ts`** — 'throwing a paper at a porch in window pays clean' becomes 'throwing through the window in-window pays clean': rider `z = 18`, `x = 0`, `heading = 1`, `clockMin = 25` (house 0 left, window [20,40]), 47 frames `act({ steer: 1, throwHeld: true })` then release — with Task 2's aim/assist in place the paper crosses the left face inside house 0's z-band (worked example: z_c ≈ 30.7, band [28.8, 31.2]). Keep the `pay ≥ 2` and `held < 16` assertions.
 
-- [ ] **Step 7: Run, verify green**
+- [x] **Step 7: Run, verify green**
 
 Run: `npx vitest run`
 Expected: all papers + sim tests pass; determinism test still passes (all new logic is state-deterministic).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A && git commit -m "feat: window delivery model (crossing, wall bounce, ground lost)"
@@ -415,7 +415,7 @@ Semantics:
 - **Charging (Space held):** no lateral drift (`r.x` frozen); `aim` eases toward `lean*0.75 + assistX*0.25` where `lean = -steer*heading*AIM_REACH`. Release: aim decays to 0 (as v1).
 - **Charge curve:** `d = THROW_MIN + (THROW_MAX - THROW_MIN) * charge^1.4`.
 
-- [ ] **Step 1: Update `tests/rider.test.ts`** — replace the two steering/charge tests with:
+- [x] **Step 1: Update `tests/rider.test.ts`** — replace the two steering/charge tests with:
 
 ```ts
 test('steering is screen-relative: D moves toward -x on the outbound leg (not charging)', () => {
@@ -461,12 +461,12 @@ test('charge ramps 0..1; charge curve is soft (half charge ~ 9.3 m)', () => {
 
 (import `ASSIST_X` from `../src/sim/types`.)
 
-- [ ] **Step 2: Run, verify failure**
+- [x] **Step 2: Run, verify failure**
 
 Run: `npx vitest run tests/rider.test.ts`
 Expected: the new lane-hold/assist/curve tests FAIL.
 
-- [ ] **Step 3: Implement in `rider.ts`**
+- [x] **Step 3: Implement in `rider.ts`**
 
 ```ts
 export function stepRider(r: Rider, dt: number, input: InputActions, assistX = 0): void {
@@ -518,12 +518,12 @@ export function landingPoint(r: Rider): { x: number; z: number } {
 
 (import `AIM_REACH`; drop the old hardcoded `* 6`.)
 
-- [ ] **Step 4: Run, verify green**
+- [x] **Step 4: Run, verify green**
 
 Run: `npx vitest run`
 Expected: all green (Task 1's sim throw test now passes with the real aim model).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "feat: lane-hold aiming, gentle assist, soft charge curve"
@@ -543,7 +543,7 @@ git push
 - Consumes: `PAPER_FLIGHT_T`, `faceX`, `WIN_Y_LO/HI/Z_HALF`, `PAPER_Y0`, `GROUND_Y`, `GRAV`, `sim.wind`, `sim.nextTarget()`.
 - Produces: marker at `(faceX+0.1·side, y_c, z_c)`; window glow on the next target.
 
-- [ ] **Step 1: Rewrite `marker.ts`**
+- [x] **Step 1: Rewrite `marker.ts`**
 
 ```ts
 import * as THREE from 'three';
@@ -617,7 +617,7 @@ export class LandingMarker {
 
 (import `WIN_Z_HALF` instead of the literal 1.2 — keep the constant single-source: use `WIN_Z_HALF`.)
 
-- [ ] **Step 2: Window glow in `scene.ts`**
+- [x] **Step 2: Window glow in `scene.ts`**
 
 Replace `updatePorchMarks` with:
 
@@ -638,11 +638,11 @@ updateWindowMarks(sim: GameSim): void {
 
 with `winGlows: THREE.MeshStandardMaterial[]` collected from `h.userData.winGlowMat` in the constructor (Task 5 adds the window mesh; until then, build the glow from the porch pad's material as a placeholder so this task stands alone: `h.userData.padMat`). Porch pads stay as visual set-dressing.
 
-- [ ] **Step 3: `main.ts`** — `world.updatePorchMarks(sim)` → `world.updateWindowMarks(sim)`; audio switch: `case 'paper_landed': audio.sfx(e.kind === 'window' ? 'thump' : e.kind === 'yard' ? 'bounce' : 'thud')`.
+- [x] **Step 3: `main.ts`** — `world.updatePorchMarks(sim)` → `world.updateWindowMarks(sim)`; audio switch: `case 'paper_landed': audio.sfx(e.kind === 'window' ? 'thump' : e.kind === 'yard' ? 'bounce' : 'thud')`.
 
-- [ ] **Step 4: Verify** — `npx tsc --noEmit && npx vitest run && npm run build`; Browserless: load `?debug=charge`, wait for the charge cycle, screenshot: marker sits at the next house's window height, amber; while a clean crossing is predicted it turns green. Confirm no console errors.
+- [x] **Step 4: Verify** — `npx tsc --noEmit && npx vitest run && npm run build`; Browserless: load `?debug=charge`, wait for the charge cycle, screenshot: marker sits at the next house's window height, amber; while a clean crossing is predicted it turns green. Confirm no console errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "feat: wind-corrected window marker, target window glow"
@@ -656,7 +656,7 @@ git push
 **Files:**
 - Modify: `src/render/camera.ts` (lateral offset + look shift)
 
-- [ ] **Step 1: Modify `ChaseCamera.update`**
+- [x] **Step 1: Modify `ChaseCamera.update`**
 
 ```ts
 update(dt: number, sim: GameSim): void {
@@ -680,11 +680,11 @@ update(dt: number, sim: GameSim): void {
 }
 ```
 
-- [ ] **Step 2: Screenshot tuning loop (Browserless, `npm run build` first)**
+- [x] **Step 2: Screenshot tuning loop (Browserless, `npm run build` first)**
 
 Loads: `?debug=ride`, sleep ~8 s, screenshot at z≈30 (outbound) and z≈120; `?debug=charge` outbound; one return-leg frame (`__pb.sim.rider.heading === -1` via eval before shot). Acceptance: road vanishing point sits off-center (roughly the 1/3 line), bike in the lower third, houses readable on both sides, window marker not occluded by the camera angle. If the diagonal is too weak/strong, tune `side` (2.2–3.4) and the look shift (`f * 1.5` → `f * 1.0`–`f * 2.0`) and re-shoot. Both legs must look right (the offset sign follows `f` so it mirrors correctly).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add -A && git commit -m "feat: 3/4 diagonal chase camera"
@@ -701,7 +701,7 @@ git push
 
 Rules: **same footprint** (body 5×4×6 at `pos`, face at ±8.5, window centered on `pos[1]`); flat-shaded voxels only (`mat()` already flatShades); warm cozy palette; per-index variation.
 
-- [ ] **Step 1: Rebuild `createHouse`** (components, all `THREE.BoxGeometry`, positions relative to `spec.pos`):
+- [x] **Step 1: Rebuild `createHouse`** (components, all `THREE.BoxGeometry`, positions relative to `spec.pos`):
 
 - body: two stacked boxes — first floor 5×2×6, second floor 4.6×1.8×5.6 (slight set-back), palette `walls[i % 6]` (retune `PALETTE.walls` toward cozy creams/terracotta/sage: e.g. `0xe8d8b8, 0xc96f4a, 0x9db87a, 0x8f86c2, 0xd8a86a, 0xb8c4a8`);
 - gable roof: three stacked shrinking boxes (5.6×0.5×6.6 → 4×0.5×5 → 2.4×0.5×3.4) in `roofs[i % 3]`, plus a chimney (0.5×1.2×0.5) on 2 of 3 variants;
@@ -712,15 +712,15 @@ Rules: **same footprint** (body 5×4×6 at `pos`, face at ±8.5, window centered
 - wind chimes: keep (porch corner), scale to the new porch;
 - yard dressing (in `scene.ts` placement loop, not the house): a low fence run (post + rail boxes) along each lot's front edge between porches, and 2–3 cube-cluster bushes per lot (deterministic by index: `createBush(seedIndex)`).
 
-- [ ] **Step 2: Voxel `createTree`** — trunk: 0.3×1.6×0.3 box; canopy: 3 stacked boxes (2.4³, 1.8³, 1.2³) offset like a chunky oak, 3 leaf colors by variant; replace the cones.
+- [x] **Step 2: Voxel `createTree`** — trunk: 0.3×1.6×0.3 box; canopy: 3 stacked boxes (2.4³, 1.8³, 1.2³) offset like a chunky oak, 3 leaf colors by variant; replace the cones.
 
-- [ ] **Step 3: Rider block** — head `SphereGeometry` → 0.36 cube; keep everything else.
+- [x] **Step 3: Rider block** — head `SphereGeometry` → 0.36 cube; keep everything else.
 
-- [ ] **Step 4: `scene.ts`** — in the houses loop collect `h.userData.winGlowMat` into `this.winGlows` (replacing the Task 3 placeholder); add fences + bushes in the trees loop (positions: lot center z ± offsets, x = ±12.8; deterministic by index — no RNG in the renderer).
+- [x] **Step 4: `scene.ts`** — in the houses loop collect `h.userData.winGlowMat` into `this.winGlows` (replacing the Task 3 placeholder); add fences + bushes in the trees loop (positions: lot center z ± offsets, x = ±12.8; deterministic by index — no RNG in the renderer).
 
-- [ ] **Step 5: Verify** — `npm run build`; Browserless: `?debug=ride` screenshots at 3 house types + rain state + return leg: houses read cozy (roof/porch/window/door visible), windows glow on the next target, delivered papers sit in the window (visible in `updatePapers` settled meshes), no shadow acne regressions. No sim changes in this task, so tests stay green — run them anyway.
+- [x] **Step 5: Verify** — `npm run build`; Browserless: `?debug=ride` screenshots at 3 house types + rain state + return leg: houses read cozy (roof/porch/window/door visible), windows glow on the next target, delivered papers sit in the window (visible in `updatePapers` settled meshes), no shadow acne regressions. No sim changes in this task, so tests stay green — run them anyway.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A && git commit -m "feat: cozy voxel houses, fences, bushes, blocky trees/rider"

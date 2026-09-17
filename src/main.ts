@@ -98,7 +98,7 @@ function frame() {
   loop.frame(dt, (sdt) => {
     if (state !== 'riding') return;
     let acts = input.readActions();
-    if (DBG) acts = autoInput(DBG, time, acts);
+    if (DBG) acts = autoInput(DBG, time, acts, sim);
     sim.step(sdt, acts);
     time += sdt;
     audio.chainTick(sim.rider.speed);
@@ -171,6 +171,9 @@ function frame() {
   world.render();
 }
 frame();
+
+(window as any).__errcount = 0;
+window.addEventListener('error', () => ((window as any).__errcount++));
 
 (window as any).__pb = {
   get sim() {
