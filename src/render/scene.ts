@@ -42,7 +42,7 @@ export class WorldScene {
   sun: THREE.DirectionalLight;
   skydome: THREE.Mesh;
   houseGroups: THREE.Group[] = [];
-  porchPads: THREE.Mesh[] = [];
+  winGlows: THREE.MeshStandardMaterial[] = [];
   chimes: THREE.Group[] = [];
   carMeshes: THREE.Group[] = [];
   carAssign = new Map<number, number>(); // car id -> pool index
@@ -117,7 +117,7 @@ export class WorldScene {
     cfg.houses.forEach((spec, i) => {
       const h = createHouse(spec, i);
       this.houseGroups.push(h);
-      this.porchPads.push(h.userData.pad);
+      this.winGlows.push(h.userData.winMat as THREE.MeshStandardMaterial);
       this.chimes.push(h.userData.chime);
       this.scene.add(h);
       const box = createMailbox();
@@ -238,11 +238,10 @@ export class WorldScene {
     }
   }
 
-  updatePorchMarks(sim: GameSim): void {
+  updateWindowMarks(sim: GameSim): void {
     const target = sim.nextTarget();
     const pulse = 0.65 + 0.35 * Math.sin(this.time * 4);
-    this.porchPads.forEach((pad, i) => {
-      const m = pad.material as THREE.MeshStandardMaterial;
+    this.winGlows.forEach((m, i) => {
       if (i === target) {
         m.emissive.setHex(0xff9020);
         m.emissiveIntensity = pulse;

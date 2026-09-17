@@ -141,7 +141,7 @@ function frame() {
   world.updateBike(sim);
   world.updateCars(sim);
   world.updatePapers(sim);
-  world.updatePorchMarks(sim);
+  world.updateWindowMarks(sim);
   world.updateChimes(time, sim.weather.wind);
   world.updateBirds(time);
   world.setSun(sim.clockMin, sim.config.time.length);

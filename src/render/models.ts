@@ -56,6 +56,13 @@ export function createHouse(spec: HouseSpec, i: number): THREE.Group {
   g.add(pad);
   g.userData.pad = pad;
 
+  // street-side window: the paper's catch target (Task 5 gives it cozy framing)
+  const winMat = mat(0xffd9a0, { emissive: 0x000000, roughness: 0.6 });
+  const win = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.1, 2.2), winMat);
+  win.position.set(spec.pos[0] - streetSide * 2.5, 1.45, spec.pos[1]);
+  g.add(win);
+  g.userData.winMat = winMat;
+
   // wind chimes on the porch corner
   const chime = new THREE.Group();
   chime.position.set(spec.porch.x + streetSide * -1.0, 2.2, spec.porch.z + spec.porch.d / 2 - 0.4);
